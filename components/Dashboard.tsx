@@ -25,6 +25,7 @@ import SubscriptionManager from './SubscriptionManager';
 import BookingManager from './BookingManager';
 import LockerManager from './LockerManager';
 import ReportsManager from './ReportsManager';
+import ConfigurationManager from './ConfigurationManager';
 
 interface DashboardProps {
   config?: BusinessConfig;
@@ -1157,7 +1158,7 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
       case 'reports':
         return <ReportsManager config={config} />;
       case 'config':
-        return renderConfigPanel();
+        return <ConfigurationManager config={config} onConfigChange={onConfigChange} />;
       default:
         return (
           <div className="bg-white p-6 rounded-lg shadow-sm border">
