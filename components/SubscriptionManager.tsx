@@ -6,7 +6,6 @@ import {
   TextInput, 
   SelectInput, 
   DateInput, 
-  useFormValidation, 
   validators,
   FormField 
 } from './FormComponents';
@@ -101,25 +100,78 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
   ]);
 
   const [showNewForm, setShowNewForm] = useState(false);
-
-  // Form validation setup
-  const initialFormValues = {
+  const [formData, setFormData] = useState({
     customerName: '',
     customerEmail: '',
     studioId: '',
     type: 'monthly' as 'monthly' | 'student' | 'yearly',
     startDate: '',
     scheduleSlots: [{ day: '', timeSlot: '' }]
+  });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const validateField = (name: string, value: any): string => {
+    switch (name) {
+      case 'customerName':
+        if (!value || value.length < 2) return 'Naam is verplicht (min. 2 karakters)';
+        break;
+      case 'customerEmail':
+        if (!value) return 'Email is verplicht';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Ongeldig email adres';
+        break;
+      case 'studioId':
+        if (!value) return 'Studio selectie is verplicht';
+        break;
+      case 'startDate':
+        if (!value) return 'Start datum is verplicht';
+        break;
+    }
+    return '';
   };
 
-  const formValidation = useFormValidation(initialFormValues, {
-    customerName: [validators.required, validators.minLength(2)],
-    customerEmail: [validators.required, validators.email],
-    studioId: [validators.required],
-    startDate: [validators.required]
-  });
+  const handleInputChange = (name: string, value: any) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear error when user starts typing
+    if (formErrors[name]) {
+      setFormErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
 
-  const { values, errors, touched, setValue, setTouched, validateAll, reset } = formValidation;
+  const handleInputBlur = (name: string, value: any) => {
+    const error = validateField(name, value);
+    if (error) {
+      setFormErrors(prev => ({ ...prev, [name]: error }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    Object.keys(formData).forEach(key => {
+      if (key !== 'scheduleSlots') {
+        const error = validateField(key, formData[key as keyof typeof formData]);
+        if (error) {
+          newErrors[key] = error;
+        }
+      }
+    });
+
+    setFormErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const resetForm = () => {
+    setFormData({
+      customerName: '',
+      customerEmail: '',
+      studioId: '',
+      type: 'monthly',
+      startDate: '',
+      scheduleSlots: [{ day: '', timeSlot: '' }]
+    });
+    setFormErrors({});
+  };
 
   const studioOptions = config.studios.map(studio => ({
     value: studio.id,
@@ -183,41 +235,49 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
   };
 
   const addScheduleSlot = () => {
-    setValue('scheduleSlots', [...values.scheduleSlots, { day: '', timeSlot: '' }]);
+    setFormData(prev => ({
+      ...prev,
+      scheduleSlots: [...prev.scheduleSlots, { day: '', timeSlot: '' }]
+    }));
   };
 
   const removeScheduleSlot = (index: number) => {
-    if (values.scheduleSlots.length > 1) {
-      const newSlots = values.scheduleSlots.filter((_, i) => i !== index);
-      setValue('scheduleSlots', newSlots);
+    if (formData.scheduleSlots.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        scheduleSlots: prev.scheduleSlots.filter((_, i) => i !== index)
+      }));
     }
   };
 
   const updateScheduleSlot = (index: number, field: 'day' | 'timeSlot', value: string) => {
-    const newSlots = [...values.scheduleSlots];
-    newSlots[index] = { ...newSlots[index], [field]: value };
-    setValue('scheduleSlots', newSlots);
+    setFormData(prev => ({
+      ...prev,
+      scheduleSlots: prev.scheduleSlots.map((slot, i) => 
+        i === index ? { ...slot, [field]: value } : slot
+      )
+    }));
   };
 
   const calculatePrice = () => {
-    const studio = config.studios.find(s => s.id === values.studioId);
+    const studio = config.studios.find(s => s.id === formData.studioId);
     if (!studio) return 0;
 
     let price = studio.monthlyRate;
-    if (values.type === 'student') {
+    if (formData.type === 'student') {
       price = price * (1 - config.discounts.student / 100);
-    } else if (values.type === 'yearly') {
+    } else if (formData.type === 'yearly') {
       price = price * (1 - config.discounts.bulk / 100);
     }
     return Math.round(price);
   };
 
   const createSubscription = async () => {
-    if (!validateAll()) {
+    if (!validateForm()) {
       return;
     }
 
-    const studio = config.studios.find(s => s.id === values.studioId);
+    const studio = config.studios.find(s => s.id === formData.studioId);
     if (!studio) return;
 
     const price = calculatePrice();
@@ -226,21 +286,21 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
 
     const newSub: Subscription = {
       id: `sub-${Date.now()}`,
-      customerName: values.customerName,
-      customerEmail: values.customerEmail,
-      studioId: values.studioId,
+      customerName: formData.customerName,
+      customerEmail: formData.customerEmail,
+      studioId: formData.studioId,
       studioName: studio.name,
-      schedule: values.scheduleSlots.filter(s => s.day && s.timeSlot),
-      startDate: values.startDate,
+      schedule: formData.scheduleSlots.filter(s => s.day && s.timeSlot),
+      startDate: formData.startDate,
       nextBilling: nextBilling.toISOString().split('T')[0],
       monthlyPrice: price,
       status: 'active',
-      type: values.type
+      type: formData.type
     };
 
     setSubscriptions(prev => [...prev, newSub]);
     setShowNewForm(false);
-    reset();
+    resetForm();
   };
 
   const updateSubscriptionStatus = (subscriptionId: string, status: Subscription['status']) => {
@@ -327,7 +387,7 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
             <button
               onClick={() => {
                 setShowNewForm(false);
-                reset();
+                resetForm();
               }}
               className="text-gray-400 hover:text-gray-600"
             >
@@ -386,11 +446,10 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
             />
           </div>
 
-          {/* Schedule Slots */}
           <div className="mt-6">
             <FormField label="Wekelijkse Planning" required>
               <div className="space-y-3">
-                {values.scheduleSlots.map((slot, index) => (
+                {formData.scheduleSlots.map((slot, index) => (
                   <div key={index} className="flex gap-3 items-end">
                     <div className="flex-1">
                       <SelectInput
@@ -410,7 +469,7 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
                         placeholder="Selecteer tijdslot"
                       />
                     </div>
-                    {values.scheduleSlots.length > 1 && (
+                    {formData.scheduleSlots.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeScheduleSlot(index)}
@@ -434,18 +493,18 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
           </div>
 
           {/* Price Preview */}
-          {values.studioId && (
+          {formData.studioId && (
             <div className="mt-6 p-4 bg-blue-50 rounded-lg">
               <div className="flex justify-between items-center">
                 <span className="font-medium">Maandprijs:</span>
                 <span className="text-xl font-bold text-blue-600">€{calculatePrice()}</span>
               </div>
-              {values.type === 'student' && (
+              {formData.type === 'student' && (
                 <p className="text-sm text-blue-600 mt-1">
                   Inclusief {config.discounts.student}% studentenkorting
                 </p>
               )}
-              {values.type === 'yearly' && (
+              {formData.type === 'yearly' && (
                 <p className="text-sm text-blue-600 mt-1">
                   Inclusief {config.discounts.bulk}% jaarkorting
                 </p>
@@ -463,7 +522,7 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
             <button 
               onClick={() => {
                 setShowNewForm(false);
-                reset();
+                resetForm();
               }} 
               className="btn btn-secondary"
             >
