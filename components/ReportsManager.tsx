@@ -91,17 +91,24 @@ export default function ReportsManager({ config }: ReportsManagerProps) {
     target: 75
   }));
 
-  const generatePDFReport = async () => {
-    setIsGenerating(true);
-    
+const generatePDFReport = async () => {
+  setIsGenerating(true);
+  
+  try {
     // Simuleer report generatie
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     // In productie zou je hier een PDF genereren
     console.log('PDF Report generated for period:', selectedPeriod);
+    alert(`PDF rapport voor ${selectedPeriod} is gegenereerd!`);
     
+  } catch (error) {
+    console.error('PDF generation failed:', error);
+    alert('PDF generatie is mislukt. Probeer opnieuw.');
+  } finally {
     setIsGenerating(false);
-  };
+  }
+};
 
   const exportToCSV = () => {
     const csvData = monthlyData.map(month => ({
