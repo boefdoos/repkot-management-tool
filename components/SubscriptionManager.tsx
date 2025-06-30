@@ -1,4 +1,4 @@
-// components/SubscriptionManager.tsx (Updated with improved forms)
+// components/SubscriptionManager.tsx (Updated with simplified forms)
 import React, { useState } from 'react';
 import { Users, Plus, Calendar, DollarSign, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { BusinessConfig } from '../lib/config';
@@ -6,7 +6,6 @@ import {
   TextInput, 
   SelectInput, 
   DateInput, 
-  validators,
   FormField 
 } from './FormComponents';
 
@@ -398,10 +397,10 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <TextInput
               label="Band/Artist Naam"
-              value={values.customerName}
-              onChange={(e) => setValue('customerName', e.target.value)}
-              onBlur={() => setTouched('customerName')}
-              error={touched.customerName ? errors.customerName : undefined}
+              value={formData.customerName}
+              onChange={(e) => handleInputChange('customerName', e.target.value)}
+              onBlur={(e) => handleInputBlur('customerName', e.target.value)}
+              error={formErrors.customerName}
               placeholder="Naam van de band"
               required
             />
@@ -409,20 +408,20 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
             <TextInput
               label="Contact Email"
               type="email"
-              value={values.customerEmail}
-              onChange={(e) => setValue('customerEmail', e.target.value)}
-              onBlur={() => setTouched('customerEmail')}
-              error={touched.customerEmail ? errors.customerEmail : undefined}
+              value={formData.customerEmail}
+              onChange={(e) => handleInputChange('customerEmail', e.target.value)}
+              onBlur={(e) => handleInputBlur('customerEmail', e.target.value)}
+              error={formErrors.customerEmail}
               placeholder="contact@band.com"
               required
             />
 
             <SelectInput
               label="Studio"
-              value={values.studioId}
-              onChange={(e) => setValue('studioId', e.target.value)}
-              onBlur={() => setFieldTouched('studioId')}
-              error={touched.studioId ? errors.studioId : undefined}
+              value={formData.studioId}
+              onChange={(e) => handleInputChange('studioId', e.target.value)}
+              onBlur={(e) => handleInputBlur('studioId', e.target.value)}
+              error={formErrors.studioId}
               options={studioOptions}
               placeholder="Selecteer studio"
               required
@@ -430,22 +429,23 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
 
             <SelectInput
               label="Abonnement Type"
-              value={values.type}
-              onChange={(e) => setValue('type', e.target.value as any)}
+              value={formData.type}
+              onChange={(e) => handleInputChange('type', e.target.value)}
               options={subscriptionTypeOptions}
             />
 
             <DateInput
               label="Start Datum"
-              value={values.startDate}
-              onChange={(e) => setValue('startDate', e.target.value)}
-              onBlur={() => setFieldTouched('startDate')}
-              error={touched.startDate ? errors.startDate : undefined}
+              value={formData.startDate}
+              onChange={(e) => handleInputChange('startDate', e.target.value)}
+              onBlur={(e) => handleInputBlur('startDate', e.target.value)}
+              error={formErrors.startDate}
               min={new Date().toISOString().split('T')[0]}
               required
             />
           </div>
 
+          {/* Schedule Slots */}
           <div className="mt-6">
             <FormField label="Wekelijkse Planning" required>
               <div className="space-y-3">
