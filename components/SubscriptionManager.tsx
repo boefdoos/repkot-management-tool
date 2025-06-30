@@ -119,7 +119,7 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
     startDate: [validators.required]
   });
 
-  const { values, errors, touched, setValue, setTouched: setFieldTouched, validateAll, reset } = formValidation;
+  const { values, errors, touched, setValue, setTouched, validateAll, reset } = formValidation;
 
   const studioOptions = config.studios.map(studio => ({
     value: studio.id,
@@ -340,7 +340,7 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
               label="Band/Artist Naam"
               value={values.customerName}
               onChange={(e) => setValue('customerName', e.target.value)}
-              onBlur={() => setFieldTouched('customerName')}
+              onBlur={() => setTouched('customerName')}
               error={touched.customerName ? errors.customerName : undefined}
               placeholder="Naam van de band"
               required
@@ -351,7 +351,7 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
               type="email"
               value={values.customerEmail}
               onChange={(e) => setValue('customerEmail', e.target.value)}
-              onBlur={() => setFieldTouched('customerEmail')}
+              onBlur={() => setTouched('customerEmail')}
               error={touched.customerEmail ? errors.customerEmail : undefined}
               placeholder="contact@band.com"
               required
