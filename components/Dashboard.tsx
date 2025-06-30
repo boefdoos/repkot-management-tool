@@ -725,69 +725,172 @@ const ClimateControl = () => {
     </div>
   );
 
-  const MaintenancePanel = () => (
-    <div className="space-y-6">
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Wrench className="w-5 h-5" />
-          Onderhoud & Monitoring
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h4 className="font-semibold mb-3">Geplande Taken</h4>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center p-3 border rounded-lg">
-                <div>
-                  <p className="font-medium">Filter ventilatie vervangen</p>
-                  <p className="text-sm text-gray-500">Vervaldatum: 15 juli 2025</p>
-                </div>
-                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
-                  Binnenkort
-                </span>
+const MaintenancePanel = () => {
+    const [tasks, setTasks] = useState([
+      { id: 1, title: 'Filter ventilatie vervangen', date: '2025-07-15', status: 'Binnenkort' },
+      { id: 2, title: 'Akoestische panelen controle', date: '2025-08-01', status: 'Gepland' }
+    ]);
+
+    const [issues, setIssues] = useState([
+      { id: 1, title: 'Studio B - Thermostaat error', date: '2025-06-25', status: 'Open' },
+      { id: 2, title: 'Locker 4 - Slot klemming', date: '2025-06-22', status: 'Opgelost' }
+    ]);
+
+    const [showNewIssueForm, setShowNewIssueForm] = useState(false);
+    const [newIssue, setNewIssue] = useState({ title: '', description: '' });
+
+    const reportNewIssue = () => {
+      if (!newIssue.title) {
+        alert('Vul een titel in');
+        return;
+      }
+
+      const issue = {
+        id: Date.now(),
+        title: newIssue.title,
+        date: new Date().toISOString().split('T')[0],
+        status: 'Open'
+      };
+
+      setIssues(prev => [issue, ...prev]);
+      setNewIssue({ title: '', description: '' });
+      setShowNewIssueForm(false);
+      alert('Probleem gemeld!');
+    };
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Wrench className="w-5 h-5" />
+            Onderhoud & Monitoring
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-semibold mb-3">Geplande Taken</h4>
+              <div className="space-y-3">
+                {tasks.map(task => (
+                  <div key={task.id} className="flex justify-between items-center p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium">{task.title}</p>
+                      <p className="text-sm text-gray-500">Vervaldatum: {new Date(task.date).toLocaleDateString('nl-BE')}</p>
+                    </div>
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      task.status === 'Binnenkort' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                    }`}>
+                      {task.status}
+                    </span>
+                  </div>
+                ))}
               </div>
-              
-              <div className="flex justify-between items-center p-3 border rounded-lg">
-                <div>
-                  <p className="font-medium">Akoestische panelen controle</p>
-                  <p className="text-sm text-gray-500">Vervaldatum: 1 augustus 2025</p>
-                </div>
-                <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                  Gepland
-                </span>
+            </div>
+            
+            <div>
+              <h4 className="font-semibold mb-3">Recente Problemen</h4>
+              <div className="space-y-3">
+                {issues.slice(0, 2).map(issue => (
+                  <div key={issue.id} className="flex justify-between items-center p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium">{issue.title}</p>
+                      <p className="text-sm text-gray-500">
+                        {issue.status === 'Open' ? 'Gerapporteerd' : 'Opgelost'}: {new Date(issue.date).toLocaleDateString('nl-BE')}
+                      </p>
+                    </div>
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      issue.status === 'Open' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {issue.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <button 
+                onClick={() => setShowNewIssueForm(true)}
+                className="btn btn-primary mt-3 w-full"
+              >
+                Nieuw Probleem Melden
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {showNewIssueForm && (
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <h3 className="text-lg font-semibold mb-4">Nieuw Probleem Melden</h3>
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="Probleem titel"
+                value={newIssue.title}
+                onChange={(e) => setNewIssue(prev => ({...prev, title: e.target.value}))}
+                className="form-input"
+              />
+              <textarea
+                placeholder="Beschrijving (optioneel)"
+                value={newIssue.description}
+                onChange={(e) => setNewIssue(prev => ({...prev, description: e.target.value}))}
+                className="form-input"
+                rows={3}
+              />
+              <div className="flex gap-2">
+                <button onClick={reportNewIssue} className="btn btn-primary">
+                  Probleem Melden
+                </button>
+                <button 
+                  onClick={() => setShowNewIssueForm(false)} 
+                  className="btn btn-secondary"
+                >
+                  Annuleren
+                </button>
               </div>
             </div>
           </div>
-          
-          <div>
-            <h4 className="font-semibold mb-3">Recente Problemen</h4>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center p-3 border rounded-lg">
-                <div>
-                  <p className="font-medium">Studio B - Thermostaat error</p>
-                  <p className="text-sm text-gray-500">Gerapporteerd: 25 juni 2025</p>
-                </div>
-                <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">
-                  Open
-                </span>
-              </div>
-              
-              <div className="flex justify-between items-center p-3 border rounded-lg">
-                <div>
-                  <p className="font-medium">Locker 4 - Slot klemming</p>
-                  <p className="text-sm text-gray-500">Opgelost: 22 juni 2025</p>
-                </div>
-                <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">
-                  Opgelost
-                </span>
+        )}
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <h3 className="text-lg font-semibold mb-4">Noodcontacten</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 border rounded-lg">
+              <h4 className="font-semibold">Partner 1 (Technisch)</h4>
+              <p className="text-sm text-gray-600 mb-2">Primair contact voor technische problemen</p>
+              <div className="space-y-1">
+                <a href="tel:+32123456789" className="flex items-center gap-2 text-blue-600 text-sm">
+                  📞 +32 123 45 67 89
+                </a>
+                <a href="mailto:partner1@repkot.be" className="flex items-center gap-2 text-blue-600 text-sm">
+                  📧 partner1@repkot.be
+                </a>
               </div>
             </div>
-            <button className="btn btn-primary mt-3 w-full">
-              Nieuw Probleem Melden
-            </button>
+            
+            <div className="p-4 border rounded-lg">
+              <h4 className="font-semibold">Partner 2 (Zakelijk)</h4>
+              <p className="text-sm text-gray-600 mb-2">Primair contact voor klanten/administratie</p>
+              <div className="space-y-1">
+                <a href="tel:+32987654321" className="flex items-center gap-2 text-blue-600 text-sm">
+                  📞 +32 98 76 54 321
+                </a>
+                <a href="mailto:partner2@repkot.be" className="flex items-center gap-2 text-blue-600 text-sm">
+                  📧 partner2@repkot.be
+                </a>
+              </div>
+            </div>
+            
+            <div className="p-4 border rounded-lg">
+              <h4 className="font-semibold">Externe Diensten</h4>
+              <p className="text-sm text-gray-600 mb-2">Voor urgente technische problemen</p>
+              <div className="space-y-1 text-sm">
+                <div><strong>Elektricien:</strong> +32 111 22 33 44</div>
+                <div><strong>Verwarming:</strong> +32 555 66 77 88</div>
+                <div><strong>Beveiliging:</strong> +32 999 88 77 66</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+    );
+  };
 
       {/* Emergency Contacts */}
       <div className="bg-white p-6 rounded-lg shadow-sm border">
