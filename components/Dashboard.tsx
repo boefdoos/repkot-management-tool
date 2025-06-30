@@ -108,149 +108,148 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
   );
 
 const AccessCodeManager = () => {
-  const [activeCodes, setActiveCodes] = useState([
-    { id: 1, name: 'The Foxes', timeSlot: '13:00-15:00 - Studio A', code: '4721' },
-    { id: 2, name: 'DJ Mike', timeSlot: '14:00-17:00 - Studio C', code: '8394' }
-  ]);
+    const [activeCodes, setActiveCodes] = useState([
+      { id: 1, name: 'The Foxes', timeSlot: '13:00-15:00 - Studio A', code: '4721' },
+      { id: 2, name: 'DJ Mike', timeSlot: '14:00-17:00 - Studio C', code: '8394' }
+    ]);
 
-  const [newCodeForm, setNewCodeForm] = useState({
-    customerName: '',
-    datetime: '',
-    studioId: ''
-  });
+    const [newCodeForm, setNewCodeForm] = useState({
+      customerName: '',
+      datetime: '',
+      studioId: ''
+    });
 
-  const generateNewCode = () => {
-    if (!newCodeForm.customerName || !newCodeForm.datetime || !newCodeForm.studioId) {
-      alert('Vul alle velden in');
-      return;
-    }
+    const generateNewCode = () => {
+      if (!newCodeForm.customerName || !newCodeForm.datetime || !newCodeForm.studioId) {
+        alert('Vul alle velden in');
+        return;
+      }
 
-    const newCode = {
-      id: Date.now(),
-      name: newCodeForm.customerName,
-      timeSlot: `${new Date(newCodeForm.datetime).toLocaleString('nl-BE')} - ${config.studios.find(s => s.id === newCodeForm.studioId)?.name}`,
-      code: Math.floor(1000 + Math.random() * 9000).toString()
+      const newCode = {
+        id: Date.now(),
+        name: newCodeForm.customerName,
+        timeSlot: `${new Date(newCodeForm.datetime).toLocaleString('nl-BE')} - ${config.studios.find(s => s.id === newCodeForm.studioId)?.name}`,
+        code: Math.floor(1000 + Math.random() * 9000).toString()
+      };
+
+      setActiveCodes(prev => [...prev, newCode]);
+      setNewCodeForm({ customerName: '', datetime: '', studioId: '' });
+      alert(`Nieuwe code gegenereerd: ${newCode.code}`);
     };
 
-    setActiveCodes(prev => [...prev, newCode]);
-    setNewCodeForm({ customerName: '', datetime: '', studioId: '' });
-    alert(`Nieuwe code gegenereerd: ${newCode.code}`);
-  };
+    const deactivateCode = (id: number) => {
+      setActiveCodes(prev => prev.filter(code => code.id !== id));
+    };
 
-  const deactivateCode = (id: number) => {
-    setActiveCodes(prev => prev.filter(code => code.id !== id));
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <KeyRound className="w-5 h-5" />
-          Toegangscodes Beheer
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h4 className="font-semibold mb-3">Actieve Codes</h4>
-            <div className="space-y-3">
-              {activeCodes.map(code => (
-                <div key={code.id} className="flex justify-between items-center p-3 border rounded-lg">
-                  <div>
-                    <p className="font-medium">{code.name}</p>
-                    <p className="text-sm text-gray-500">{code.timeSlot}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-mono text-lg font-bold">{code.code}</p>
-                    <button 
-                      onClick={() => deactivateCode(code.id)}
-                      className="text-red-600 text-sm hover:underline"
-                    >
-                      Deactiveer
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+    return (
+      <div className="space-y-6">
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <KeyRound className="w-5 h-5" />
+            Toegangscodes Beheer
+          </h3>
           
-          <div>
-            <h4 className="font-semibold mb-3">Nieuwe Code Genereren</h4>
-            <div className="space-y-3">
-              <input 
-                type="text" 
-                placeholder="Klant naam" 
-                value={newCodeForm.customerName}
-                onChange={(e) => setNewCodeForm(prev => ({...prev, customerName: e.target.value}))}
-                className="form-input"
-              />
-              <input 
-                type="datetime-local" 
-                value={newCodeForm.datetime}
-                onChange={(e) => setNewCodeForm(prev => ({...prev, datetime: e.target.value}))}
-                className="form-input"
-              />
-              <select 
-                value={newCodeForm.studioId}
-                onChange={(e) => setNewCodeForm(prev => ({...prev, studioId: e.target.value}))}
-                className="form-input"
-              >
-                <option value="">Selecteer studio</option>
-                {config.studios.map(studio => (
-                  <option key={studio.id} value={studio.id}>{studio.name}</option>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-semibold mb-3">Actieve Codes</h4>
+              <div className="space-y-3">
+                {activeCodes.map(code => (
+                  <div key={code.id} className="flex justify-between items-center p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium">{code.name}</p>
+                      <p className="text-sm text-gray-500">{code.timeSlot}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-mono text-lg font-bold">{code.code}</p>
+                      <button 
+                        onClick={() => deactivateCode(code.id)}
+                        className="text-red-600 text-sm hover:underline"
+                      >
+                        Deactiveer
+                      </button>
+                    </div>
+                  </div>
                 ))}
-                <option value="all">Alle Studios</option>
-              </select>
-              <button 
-                onClick={generateNewCode}
-                className="btn btn-primary w-full"
-              >
-                Genereer Code
-              </button>
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="font-semibold mb-3">Nieuwe Code Genereren</h4>
+              <div className="space-y-3">
+                <input 
+                  type="text" 
+                  placeholder="Klant naam" 
+                  value={newCodeForm.customerName}
+                  onChange={(e) => setNewCodeForm(prev => ({...prev, customerName: e.target.value}))}
+                  className="form-input"
+                />
+                <input 
+                  type="datetime-local" 
+                  value={newCodeForm.datetime}
+                  onChange={(e) => setNewCodeForm(prev => ({...prev, datetime: e.target.value}))}
+                  className="form-input"
+                />
+                <select 
+                  value={newCodeForm.studioId}
+                  onChange={(e) => setNewCodeForm(prev => ({...prev, studioId: e.target.value}))}
+                  className="form-input"
+                >
+                  <option value="">Selecteer studio</option>
+                  {config.studios.map(studio => (
+                    <option key={studio.id} value={studio.id}>{studio.name}</option>
+                  ))}
+                  <option value="all">Alle Studios</option>
+                </select>
+                <button 
+                  onClick={generateNewCode}
+                  className="btn btn-primary w-full"
+                >
+                  Genereer Code
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Rest van AccessCodeManager... */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold mb-4">Beveiligingsstatus</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h4 className="font-semibold mb-3">Camera Status</h4>
-            <div className="space-y-2">
-              {['Ingang', 'Gemeenschappelijke ruimte', 'Gang'].map((location, index) => (
-                <div key={index} className="flex justify-between items-center">
-                  <span className="text-sm">{location}</span>
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                    Online
-                  </span>
-                </div>
-              ))}
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <h3 className="text-lg font-semibold mb-4">Beveiligingsstatus</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-semibold mb-3">Camera Status</h4>
+              <div className="space-y-2">
+                {['Ingang', 'Gemeenschappelijke ruimte', 'Gang'].map((location, index) => (
+                  <div key={index} className="flex justify-between items-center">
+                    <span className="text-sm">{location}</span>
+                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                      Online
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-          
-          <div>
-            <h4 className="font-semibold mb-3">Recente Activiteit</h4>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>13:45 - Toegang Studio A</span>
-                <span className="text-green-600">✓</span>
-              </div>
-              <div className="flex justify-between">
-                <span>14:02 - Toegang Studio C</span>
-                <span className="text-green-600">✓</span>
-              </div>
-              <div className="flex justify-between">
-                <span>12:30 - Ongeautoriseerde poging</span>
-                <span className="text-red-600">⚠</span>
+            
+            <div>
+              <h4 className="font-semibold mb-3">Recente Activiteit</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>13:45 - Toegang Studio A</span>
+                  <span className="text-green-600">✓</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>14:02 - Toegang Studio C</span>
+                  <span className="text-green-600">✓</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>12:30 - Ongeautoriseerde poging</span>
+                  <span className="text-red-600">⚠</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
       {/* Security Status */}
       <div className="bg-white p-6 rounded-lg shadow-sm border">
