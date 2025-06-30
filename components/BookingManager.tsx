@@ -169,12 +169,12 @@ export default function BookingManager({ config }: BookingManagerProps) {
   };
 
   const getAvailableSlots = (): AvailableSlot[] => {
-    // Simuleer beschikbare slots - in echte app zou dit uit database komen
+    // Bereken echte beschikbaarheid gebaseerd op bestaande boekingen
     const today = new Date();
     const slots: AvailableSlot[] = [];
     
-    // Genereer slots voor de komende 7 dagen
-    for (let i = 1; i <= 7; i++) {
+    // Genereer slots voor vandaag + komende 7 dagen
+    for (let i = 0; i <= 7; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
       
@@ -183,8 +183,13 @@ export default function BookingManager({ config }: BookingManagerProps) {
       
       config.studios.forEach(studio => {
         timeSlots.slice(0, 4).forEach(timeSlot => { // Exclude double timeslot for availability
-          // Simuleer dat sommige slots bezet zijn
-          const isBooked = Math.random() > 0.7; // 30% kans dat slot bezet is
+          // Check of dit tijdslot al geboekt is
+          const isBooked = bookings.some(booking => 
+            booking.studioId === studio.id && 
+            booking.date === dateStr && 
+            booking.timeSlot === timeSlot.label &&
+            booking.status !== 'cancelled'
+          );
           
           if (!isBooked) {
             slots.push({
@@ -213,7 +218,7 @@ export default function BookingManager({ config }: BookingManagerProps) {
       timeSlot: slot.timeSlot,
       bookingType: 'daily',
       duration: 3,
-      notes: `Snel geboekt slot: ${slot.day} ${slot.slot}`
+      notes: '' // Laat leeg voor beheerder om in te vullen
     });
     setShowNewForm(true);
   };
@@ -332,7 +337,7 @@ export default function BookingManager({ config }: BookingManagerProps) {
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Zap className="w-5 h-5 text-green-500" />
-            Beschikbare Tijdsloten - Snel Boeken
+            Beschikbare Tijdsloten - Snel Boeken voor Klanten
           </h3>
           <button
             onClick={() => setShowAllSlots(!showAllSlots)}
@@ -342,14 +347,18 @@ export default function BookingManager({ config }: BookingManagerProps) {
           </button>
         </div>
         
+        <p className="text-sm text-gray-600 mb-4">
+          Voor telefonische boekingen of email aanvragen - klik "Boek Nu" om snel een boeking aan te maken.
+        </p>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {(showAllSlots ? availableSlots : availableSlots.slice(0, 6)).map((slot, index) => (
-            <div key={index} className="flex justify-between items-center p-3 border rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
+            <div key={`${slot.studioId}-${slot.date}-${slot.timeSlot}`} className="flex justify-between items-center p-3 border rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm font-medium text-green-800">{slot.studio}</span>
                   <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                    Beschikbaar
+                    Vrij
                   </span>
                 </div>
                 <p className="text-sm text-gray-600">{slot.day}</p>
@@ -371,8 +380,8 @@ export default function BookingManager({ config }: BookingManagerProps) {
         {availableSlots.length === 0 && (
           <div className="text-center py-8 text-gray-500">
             <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-            <p>Geen beschikbare slots deze week</p>
-            <p className="text-sm">Probeer volgende week of neem contact op</p>
+            <p>Alle tijdsloten zijn geboekt deze week</p>
+            <p className="text-sm">Controleer volgende week of voeg nieuwe boekingen handmatig toe</p>
           </div>
         )}
       </div>
