@@ -1,47 +1,27 @@
 // pages/index.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Head from 'next/head';
 import Dashboard from '../components/Dashboard';
+import SubscriptionManager from '../components/SubscriptionManager';
+import BookingManager from '../components/BookingManager';
+import LockerManager from '../components/LockerManager';
 import { BusinessConfig, defaultConfig } from '../lib/config';
-import FirebaseService from '../lib/firebase';
 
 export default function Home() {
   const [config, setConfig] = useState<BusinessConfig>(defaultConfig);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Load configuration from Firebase on component mount
-  useEffect(() => {
-    loadConfig();
-  }, []);
-
-  const loadConfig = async () => {
-    try {
-      setLoading(true);
-      const firebaseConfig = await FirebaseService.getConfig();
-      setConfig(firebaseConfig);
-    } catch (err) {
-      console.error('Failed to load config:', err);
-      setError('Failed to load configuration. Using default values.');
-      // Continue with default config
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleConfigChange = async (newConfig: BusinessConfig) => {
     try {
       // Update local state immediately for responsiveness
       setConfig(newConfig);
       
-      // Save to Firebase
-      await FirebaseService.saveConfig(newConfig);
+      // TODO: Save to Firebase later
+      console.log('Config updated:', newConfig);
     } catch (err) {
       console.error('Failed to save config:', err);
       setError('Failed to save configuration changes.');
-      
-      // Revert local state if save failed
-      loadConfig();
     }
   };
 
@@ -98,15 +78,4 @@ export default function Home() {
       />
     </>
   );
-}
-
-// Optional: Export static props for better performance
-export async function getStaticProps() {
-  return {
-    props: {
-      // Add any static props here if needed
-    },
-    // Regenerate the page at most once per hour
-    revalidate: 3600,
-  };
 }
