@@ -1,10 +1,9 @@
 // pages/index.tsx
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, Settings } from 'lucide-react';
 import Dashboard from '../components/Dashboard';
 import AuthForm from '../components/AuthForm';
-import ConfigurationManager from '../components/ConfigurationManager';
 import { AuthProvider, useAuth } from '../lib/auth';
 import { BusinessConfig, defaultConfig } from '../lib/config';
 
@@ -148,10 +147,22 @@ function MainApp() {
       {/* Main content */}
       {showConfig && user?.role === 'admin' ? (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <ConfigurationManager 
-            config={config} 
-            onConfigChange={handleConfigChange}
-          />
+          <div className="bg-white p-8 rounded-lg shadow-sm border text-center">
+            <Settings className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Configuratie Module</h2>
+            <p className="text-gray-600 mb-4">
+              De uitgebreide configuratie module wordt binnenkort toegevoegd.
+            </p>
+            <p className="text-sm text-gray-500">
+              Hier kun je straks alle tarieven, kosten en instellingen aanpassen.
+            </p>
+            <button
+              onClick={() => setShowConfig(false)}
+              className="mt-4 btn btn-primary"
+            >
+              Terug naar Dashboard
+            </button>
+          </div>
         </div>
       ) : (
         <Dashboard 
