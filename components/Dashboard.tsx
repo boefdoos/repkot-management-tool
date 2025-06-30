@@ -110,7 +110,28 @@ const [maintenanceIssues, setMaintenanceIssues] = useState([
     reportedBy: 'Partner 2'
   }
 ]);
+// Helper functions
+  const handleFormEvent = (e, callback) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (callback) callback(e);
+  };
 
+  const addMaintenanceIssue = (newIssue) => {
+    setMaintenanceIssues(prev => [newIssue, ...prev]);
+  };
+
+  const updateIssueStatus = (issueId, newStatus) => {
+    setMaintenanceIssues(prev => prev.map(item => 
+      item.id === issueId 
+        ? { 
+            ...item, 
+            status: newStatus,
+            resolvedDate: newStatus === 'resolved' ? new Date().toISOString().split('T')[0] : undefined
+          }
+        : item
+    ));
+  };
   // Simuleer huidige data - later uit Firebase
   const [currentData] = useState({
     monthlyRevenue: 2080,
