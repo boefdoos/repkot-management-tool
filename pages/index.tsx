@@ -1,29 +1,64 @@
 // pages/index.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
+import { LogOut, User } from 'lucide-react';
 import Dashboard from '../components/Dashboard';
-import SubscriptionManager from '../components/SubscriptionManager';
-import BookingManager from '../components/BookingManager';
-import LockerManager from '../components/LockerManager';
+import AuthForm from '../components/AuthForm';
+import ConfigurationManager from '../components/ConfigurationManager';
+import { AuthProvider, useAuth } from '../lib/auth';
 import { BusinessConfig, defaultConfig } from '../lib/config';
 
-export default function Home() {
+function MainApp() {
+  const { user, logout, login, isAuthenticated } = useAuth();
   const [config, setConfig] = useState<BusinessConfig>(defaultConfig);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showConfig, setShowConfig] = useState(false);
+
+  // Load configuration on mount
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        // In productie zou dit uit Firebase komen
+        const savedConfig = localStorage.getItem('repkot_config');
+        if (savedConfig) {
+          const parsedConfig = JSON.parse(savedConfig);
+          setConfig(parsedConfig);
+        }
+      } catch (err) {
+        console.error('Error loading config:', err);
+        setError('Could not load configuration, using defaults');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isAuthenticated) {
+      loadConfig();
+    } else {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
 
   const handleConfigChange = async (newConfig: BusinessConfig) => {
     try {
-      // Update local state immediately for responsiveness
       setConfig(newConfig);
-      
-      // TODO: Save to Firebase later
-      console.log('Config updated:', newConfig);
+      localStorage.setItem('repkot_config', JSON.stringify(newConfig));
+      setError(null);
     } catch (err) {
       console.error('Failed to save config:', err);
       setError('Failed to save configuration changes.');
     }
   };
+
+  const handleLogout = () => {
+    logout();
+    setShowConfig(false);
+  };
+
+  if (!isAuthenticated) {
+    return <AuthForm onLogin={login} />;
+  }
 
   if (loading) {
     return (
@@ -72,10 +107,66 @@ export default function Home() {
         </div>
       )}
 
-      <Dashboard 
-        config={config} 
-        onConfigChange={handleConfigChange}
-      />
+      {/* User info bar */}
+      <div className="bg-white border-b border-gray-200 px-4 py-2">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <User className="w-4 h-4 text-gray-500" />
+            <span className="text-sm text-gray-700">
+              Ingelogd als: <strong>{user?.username}</strong> ({user?.role})
+            </span>
+            <span className="text-xs text-gray-500">
+              Sinds: {user?.loginTime ? new Date(user.loginTime).toLocaleString('nl-BE') : 'Onbekend'}
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            {user?.role === 'admin' && (
+              <button
+                onClick={() => setShowConfig(!showConfig)}
+                className={`text-sm px-3 py-1 rounded-md ${
+                  showConfig 
+                    ? 'bg-blue-100 text-blue-700' 
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                }`}
+              >
+                {showConfig ? 'Dashboard' : 'Configuratie'}
+              </button>
+            )}
+            
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1 text-sm text-gray-600 hover:text-red-600 px-3 py-1 rounded-md hover:bg-red-50"
+            >
+              <LogOut className="w-4 h-4" />
+              Uitloggen
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main content */}
+      {showConfig && user?.role === 'admin' ? (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <ConfigurationManager 
+            config={config} 
+            onConfigChange={handleConfigChange}
+          />
+        </div>
+      ) : (
+        <Dashboard 
+          config={config} 
+          onConfigChange={handleConfigChange}
+        />
+      )}
     </>
+  );
+}
+
+export default function Home() {
+  return (
+    <AuthProvider>
+      <MainApp />
+    </AuthProvider>
   );
 }
