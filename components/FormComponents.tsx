@@ -1,6 +1,6 @@
-// components/FormComponents.tsx
+// components/FormComponents.tsx - Simplified version without complex hooks
 import React, { useState } from 'react';
-import { AlertCircle, Check, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 interface FormFieldProps {
   label: string;
@@ -90,8 +90,6 @@ export function NumberInput({
   className = '',
   ...props 
 }: NumberInputProps) {
-  const [focused, setFocused] = useState(false);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = parseFloat(e.target.value) || 0;
     if (max !== undefined && newValue > max) return;
@@ -117,8 +115,6 @@ export function NumberInput({
           type="number"
           value={value}
           onChange={handleChange}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
           min={min}
           max={max}
           step={step}
@@ -257,105 +253,6 @@ export function PasswordInput({
   );
 }
 
-interface CheckboxInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label: string;
-  description?: string;
-  error?: string;
-}
-
-export function CheckboxInput({ 
-  label, 
-  description, 
-  error,
-  className = '',
-  ...props 
-}: CheckboxInputProps) {
-  return (
-    <div className="space-y-1">
-      <div className="flex items-start">
-        <div className="flex items-center h-5">
-          <input
-            {...props}
-            type="checkbox"
-            className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${className}`}
-          />
-        </div>
-        <div className="ml-3 text-sm">
-          <label className="font-medium text-gray-700">
-            {label}
-          </label>
-          {description && (
-            <p className="text-gray-500">{description}</p>
-          )}
-        </div>
-      </div>
-      {error && (
-        <div className="flex items-center gap-1 text-xs text-red-600 ml-7">
-          <AlertCircle className="w-3 h-3" />
-          {error}
-        </div>
-      )}
-    </div>
-  );
-}
-
-interface RadioGroupProps {
-  label: string;
-  name: string;
-  options: Array<{ value: string; label: string; description?: string }>;
-  value: string;
-  onChange: (value: string) => void;
-  error?: string;
-  required?: boolean;
-  description?: string;
-}
-
-export function RadioGroup({ 
-  label, 
-  name, 
-  options, 
-  value, 
-  onChange, 
-  error, 
-  required, 
-  description 
-}: RadioGroupProps) {
-  return (
-    <FormField 
-      label={label} 
-      error={error} 
-      required={required} 
-      description={description}
-    >
-      <div className="space-y-2">
-        {options.map((option) => (
-          <div key={option.value} className="flex items-start">
-            <div className="flex items-center h-5">
-              <input
-                id={`${name}-${option.value}`}
-                name={name}
-                type="radio"
-                value={option.value}
-                checked={value === option.value}
-                onChange={(e) => onChange(e.target.value)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-              />
-            </div>
-            <div className="ml-3 text-sm">
-              <label htmlFor={`${name}-${option.value}`} className="font-medium text-gray-700">
-                {option.label}
-              </label>
-              {option.description && (
-                <p className="text-gray-500">{option.description}</p>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </FormField>
-  );
-}
-
 interface DateInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   error?: string;
@@ -387,38 +284,7 @@ export function DateInput({
   );
 }
 
-interface TimeInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label: string;
-  error?: string;
-  required?: boolean;
-  description?: string;
-}
-
-export function TimeInput({ 
-  label, 
-  error, 
-  required, 
-  description, 
-  className = '',
-  ...props 
-}: TimeInputProps) {
-  return (
-    <FormField 
-      label={label} 
-      error={error} 
-      required={required} 
-      description={description}
-    >
-      <input
-        {...props}
-        type="time"
-        className={`form-input ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''} ${className}`}
-      />
-    </FormField>
-  );
-}
-
-// Validation helpers
+// Simple validation helpers
 export const validators = {
   required: (value: any) => {
     if (value === null || value === undefined || value === '') {
@@ -440,113 +306,5 @@ export const validators = {
       return `Minimaal ${min} karakters vereist`;
     }
     return null;
-  },
-
-  maxLength: (max: number) => (value: string) => {
-    if (value && value.length > max) {
-      return `Maximaal ${max} karakters toegestaan`;
-    }
-    return null;
-  },
-
-  min: (min: number) => (value: number) => {
-    if (value < min) {
-      return `Waarde moet minimaal ${min} zijn`;
-    }
-    return null;
-  },
-
-  max: (max: number) => (value: number) => {
-    if (value > max) {
-      return `Waarde mag maximaal ${max} zijn`;
-    }
-    return null;
-  },
-
-  phone: (value: string) => {
-    const phoneRegex = /^[\+]?[0-9\s\-\(\)]+$/;
-    if (value && !phoneRegex.test(value)) {
-      return 'Voer een geldig telefoonnummer in';
-    }
-    return null;
   }
 };
-
-// Hook for form validation
-export function useFormValidation<T extends Record<string, any>>(
-  initialValues: T,
-  validationRules: Partial<Record<keyof T, Array<(value: any) => string | null>>>
-) {
-  const [values, setValues] = useState<T>(initialValues);
-  const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
-  const [touchedFields, setTouchedFields] = useState<Partial<Record<keyof T, boolean>>>({});
-
-  const setValue = (field: keyof T, value: any) => {
-    setValues(prev => ({ ...prev, [field]: value }));
-    if (touchedFields[field]) {
-      validateField(field, value);
-    }
-  };
-
-  const setFieldTouched = (field: keyof T) => {
-    setTouchedFields(prev => ({ ...prev, [field]: true }));
-    validateField(field, values[field]);
-  };
-
-  const validateField = (field: keyof T, value: any) => {
-    const rules = validationRules[field] || [];
-    for (const rule of rules) {
-      const error = rule(value);
-      if (error) {
-        setErrors(prev => ({ ...prev, [field]: error }));
-        return false;
-      }
-    }
-    setErrors(prev => ({ ...prev, [field]: undefined }));
-    return true;
-  };
-
-  const validateAll = () => {
-    let isValid = true;
-    const newErrors: Partial<Record<keyof T, string>> = {};
-
-    for (const field in validationRules) {
-      const rules = validationRules[field] || [];
-      for (const rule of rules) {
-        const error = rule(values[field]);
-        if (error) {
-          newErrors[field] = error;
-          isValid = false;
-          break;
-        }
-      }
-    }
-
-    setErrors(newErrors);
-    setTouchedFields(
-      Object.keys(validationRules).reduce((acc, field) => {
-        acc[field as keyof T] = true;
-        return acc;
-      }, {} as Partial<Record<keyof T, boolean>>)
-    );
-
-    return isValid;
-  };
-
-  const reset = () => {
-    setValues(initialValues);
-    setErrors({});
-    setTouchedFields({});
-  };
-
-  return {
-    values,
-    errors,
-    touched: touchedFields,
-    setValue,
-    setTouched: setFieldTouched,
-    validateAll,
-    reset,
-    isValid: Object.keys(errors).length === 0
-  };
-}
