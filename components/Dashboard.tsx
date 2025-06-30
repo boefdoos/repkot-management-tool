@@ -568,48 +568,109 @@ const ClimateControl = () => (
                   </div>
                 ))}
               </div>
-              <button 
-                onClick={() => setShowNewIssueForm(true)}
-                className="btn btn-primary mt-3 w-full"
-              >
-                Nieuw Probleem Melden
-              </button>
+<button 
+  onClick={() => setShowMaintenanceForm(true)}
+  className="btn btn-primary mt-3 w-full"
+>
+  Nieuw Probleem Melden
+</button>
             </div>
           </div>
         </div>
 
-        {showNewIssueForm && (
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <h3 className="text-lg font-semibold mb-4">Nieuw Probleem Melden</h3>
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Probleem titel"
-                value={newIssue.title}
-                onChange={(e) => setNewIssue(prev => ({...prev, title: e.target.value}))}
-                className="form-input"
-              />
-              <textarea
-                placeholder="Beschrijving (optioneel)"
-                value={newIssue.description}
-                onChange={(e) => setNewIssue(prev => ({...prev, description: e.target.value}))}
-                className="form-input"
-                rows={3}
-              />
-              <div className="flex gap-2">
-                <button onClick={reportNewIssue} className="btn btn-primary">
-                  Probleem Melden
-                </button>
-                <button 
-                  onClick={() => setShowNewIssueForm(false)} 
-                  className="btn btn-secondary"
-                >
-                  Annuleren
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+{/* Maintenance Problem Form */}
+{showMaintenanceForm && (
+  <div className="bg-white p-6 rounded-lg shadow-sm border">
+    <h3 className="text-lg font-semibold mb-4">Nieuw Onderhoudsprobleem Melden</h3>
+    
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Titel/Probleem
+        </label>
+        <input
+          type="text"
+          value={newMaintenance.title}
+          onChange={(e) => setNewMaintenance(prev => ({ ...prev, title: e.target.value }))}
+          className="form-input"
+          placeholder="Korte beschrijving van het probleem"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Locatie
+        </label>
+        <select
+          value={newMaintenance.location}
+          onChange={(e) => setNewMaintenance(prev => ({ ...prev, location: e.target.value }))}
+          className="form-input"
+        >
+          <option value="">Selecteer locatie</option>
+          <option value="studio-a">Studio A</option>
+          <option value="studio-b">Studio B</option>
+          <option value="studio-c">Studio C</option>
+          <option value="common">Gemeenschappelijke ruimte</option>
+          <option value="lockers">Lockers</option>
+          <option value="entrance">Ingang/Toegang</option>
+          <option value="technical">Technische ruimte</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Prioriteit
+        </label>
+        <select
+          value={newMaintenance.priority}
+          onChange={(e) => setNewMaintenance(prev => ({ ...prev, priority: e.target.value }))}
+          className="form-input"
+        >
+          <option value="low">Laag - Kan wachten</option>
+          <option value="medium">Gemiddeld - Binnen week</option>
+          <option value="high">Hoog - Binnen 24u</option>
+          <option value="urgent">Urgent - Direct</option>
+        </select>
+      </div>
+
+      <div className="md:col-span-2">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Gedetailleerde Beschrijving
+        </label>
+        <textarea
+          value={newMaintenance.description}
+          onChange={(e) => setNewMaintenance(prev => ({ ...prev, description: e.target.value }))}
+          className="form-input"
+          rows={3}
+          placeholder="Beschrijf het probleem in detail: wat is er aan de hand, wanneer treedt het op, welke impact heeft het..."
+        />
+      </div>
+    </div>
+
+    <div className="mt-6 flex gap-2">
+      <button 
+        onClick={() => {
+          console.log('Nieuw onderhoudsprobleem gemeld:', newMaintenance);
+          setNewMaintenance({ title: '', description: '', priority: 'medium', location: '' });
+          setShowMaintenanceForm(false);
+        }}
+        className="btn btn-primary"
+        disabled={!newMaintenance.title || !newMaintenance.location}
+      >
+        Probleem Melden
+      </button>
+      <button 
+        onClick={() => {
+          setNewMaintenance({ title: '', description: '', priority: 'medium', location: '' });
+          setShowMaintenanceForm(false);
+        }}
+        className="btn btn-secondary"
+      >
+        Annuleren
+      </button>
+    </div>
+  </div>
+)}
 
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <h3 className="text-lg font-semibold mb-4">Noodcontacten</h3>
