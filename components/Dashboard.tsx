@@ -251,46 +251,6 @@ const AccessCodeManager = () => {
     );
   };
 
-      {/* Security Status */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold mb-4">Beveiligingsstatus</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h4 className="font-semibold mb-3">Camera Status</h4>
-            <div className="space-y-2">
-              {['Ingang', 'Gemeenschappelijke ruimte', 'Gang'].map((location, index) => (
-                <div key={index} className="flex justify-between items-center">
-                  <span className="text-sm">{location}</span>
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                    Online
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <div>
-            <h4 className="font-semibold mb-3">Recente Activiteit</h4>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>13:45 - Toegang Studio A</span>
-                <span className="text-green-600">✓</span>
-              </div>
-              <div className="flex justify-between">
-                <span>14:02 - Toegang Studio C</span>
-                <span className="text-green-600">✓</span>
-              </div>
-              <div className="flex justify-between">
-                <span>12:30 - Ongeautoriseerde poging</span>
-                <span className="text-red-600">⚠</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
 // components/Dashboard.tsx
 import React, { useState, useEffect } from 'react';
 import { 
