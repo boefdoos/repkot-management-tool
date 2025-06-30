@@ -29,7 +29,21 @@ body {
 .metric-card:hover {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
+.form-input {
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
 
+.form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
 /* Status badges */
 .status-badge {
   padding: 0.25rem 0.5rem;
