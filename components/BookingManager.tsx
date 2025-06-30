@@ -143,7 +143,9 @@ export default function BookingManager({ config }: BookingManagerProps) {
     if (newBooking.bookingType === 'hourly') {
       return studio.hourlyRate * newBooking.duration;
     } else {
-      return studio.dayRate * Math.ceil(newBooking.duration / 3);
+      // Voor dagdelen: gebruik dayRate
+      const dagdelen = Math.ceil(newBooking.duration / 3); // 3 uur = 1 dagdeel
+      return studio.dayRate * dagdelen;
     }
   };
 
@@ -442,7 +444,7 @@ export default function BookingManager({ config }: BookingManagerProps) {
                 <option value="">Selecteer studio</option>
                 {config.studios.map(studio => (
                   <option key={studio.id} value={studio.id}>
-                    {studio.name} ({studio.size}m² - €{studio.dayRate}/dagdeel)
+                    {studio.name} ({studio.size}m² - €{studio.hourlyRate}/u, €{studio.dayRate}/dagdeel)
                   </option>
                 ))}
               </select>
@@ -522,7 +524,10 @@ export default function BookingManager({ config }: BookingManagerProps) {
                 <span className="text-xl font-bold text-blue-600">€{calculatePrice()}</span>
               </div>
               <p className="text-sm text-gray-600 mt-1">
-                {newBooking.duration} uur × €{config.studios.find(s => s.id === newBooking.studioId)?.hourlyRate}/uur
+                {newBooking.bookingType === 'hourly' 
+                  ? `${newBooking.duration} uur × €${config.studios.find(s => s.id === newBooking.studioId)?.hourlyRate}/uur`
+                  : `${Math.ceil(newBooking.duration / 3)} dagdeel(en) × €${config.studios.find(s => s.id === newBooking.studioId)?.dayRate}/dagdeel`
+                }
               </p>
             </div>
           )}
