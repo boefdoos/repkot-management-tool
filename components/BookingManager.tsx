@@ -1,6 +1,6 @@
-// components/BookingManager.tsx
+// components/BookingManager.tsx - Updated with Quick Book feature
 import React, { useState } from 'react';
-import { Calendar, Clock, DollarSign, Users, AlertCircle, CheckCircle, Plus } from 'lucide-react';
+import { Calendar, Clock, DollarSign, Users, AlertCircle, CheckCircle, Plus, Zap } from 'lucide-react';
 import { BusinessConfig } from '../lib/config';
 
 interface Booking {
@@ -17,6 +17,16 @@ interface Booking {
   bookingType: 'hourly' | 'daily';
   notes?: string;
   createdAt: string;
+}
+
+interface AvailableSlot {
+  studio: string;
+  studioId: string;
+  day: string;
+  slot: string;
+  date: string;
+  timeSlot: string;
+  available: boolean;
 }
 
 interface BookingManagerProps {
@@ -86,6 +96,7 @@ export default function BookingManager({ config }: BookingManagerProps) {
   ]);
 
   const [showNewForm, setShowNewForm] = useState(false);
+  const [showAllSlots, setShowAllSlots] = useState(false);
   const [newBooking, setNewBooking] = useState({
     customerName: '',
     customerEmail: '',
@@ -157,16 +168,54 @@ export default function BookingManager({ config }: BookingManagerProps) {
     };
   };
 
-  const getAvailableSlots = () => {
+  const getAvailableSlots = (): AvailableSlot[] => {
     // Simuleer beschikbare slots - in echte app zou dit uit database komen
-    return [
-      { studio: 'Studio A', day: 'Dinsdag', slot: 'Middag', available: true },
-      { studio: 'Studio A', day: 'Donderdag', slot: 'Ochtend', available: true },
-      { studio: 'Studio B', day: 'Woensdag', slot: 'Ochtend', available: true },
-      { studio: 'Studio B', day: 'Vrijdag', slot: 'Middag', available: true },
-      { studio: 'Studio C', day: 'Maandag', slot: 'Ochtend', available: true },
-      { studio: 'Studio C', day: 'Zaterdag', slot: 'Avond', available: true }
-    ];
+    const today = new Date();
+    const slots: AvailableSlot[] = [];
+    
+    // Genereer slots voor de komende 7 dagen
+    for (let i = 1; i <= 7; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      
+      const dayName = date.toLocaleDateString('nl-BE', { weekday: 'long' });
+      const dateStr = date.toISOString().split('T')[0];
+      
+      config.studios.forEach(studio => {
+        timeSlots.slice(0, 4).forEach(timeSlot => { // Exclude double timeslot for availability
+          // Simuleer dat sommige slots bezet zijn
+          const isBooked = Math.random() > 0.7; // 30% kans dat slot bezet is
+          
+          if (!isBooked) {
+            slots.push({
+              studio: studio.name,
+              studioId: studio.id,
+              day: dayName,
+              slot: timeSlot.label.split(' ')[0], // "Ochtend", "Middag", etc.
+              date: dateStr,
+              timeSlot: timeSlot.label,
+              available: true
+            });
+          }
+        });
+      });
+    }
+    
+    return slots.sort((a, b) => a.date.localeCompare(b.date));
+  };
+
+  const quickBookSlot = (slot: AvailableSlot) => {
+    setNewBooking({
+      customerName: '',
+      customerEmail: '',
+      studioId: slot.studioId,
+      date: slot.date,
+      timeSlot: slot.timeSlot,
+      bookingType: 'daily',
+      duration: 3,
+      notes: `Snel geboekt slot: ${slot.day} ${slot.slot}`
+    });
+    setShowNewForm(true);
   };
 
   const createBooking = () => {
@@ -212,6 +261,7 @@ export default function BookingManager({ config }: BookingManagerProps) {
   };
 
   const monthlyStats = getMonthlyStats();
+  const availableSlots = getAvailableSlots();
 
   return (
     <div className="space-y-6">
@@ -277,20 +327,54 @@ export default function BookingManager({ config }: BookingManagerProps) {
         </div>
       </div>
 
-      {/* Available Slots Info */}
+      {/* Available Slots Info with Quick Book */}
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold mb-4">Beschikbare Tijdsloten Deze Week</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {getAvailableSlots().slice(0, 6).map((slot, index) => (
-            <div key={index} className="flex justify-between items-center p-3 border rounded-lg bg-green-50">
-              <span className="text-sm font-medium">{slot.studio}</span>
-              <span className="text-sm text-gray-600">{slot.day} {slot.slot}</span>
-              <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                Beschikbaar
-              </span>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Zap className="w-5 h-5 text-green-500" />
+            Beschikbare Tijdsloten - Snel Boeken
+          </h3>
+          <button
+            onClick={() => setShowAllSlots(!showAllSlots)}
+            className="text-blue-600 hover:text-blue-800 text-sm"
+          >
+            {showAllSlots ? 'Toon minder' : `Toon alle ${availableSlots.length} slots`}
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {(showAllSlots ? availableSlots : availableSlots.slice(0, 6)).map((slot, index) => (
+            <div key={index} className="flex justify-between items-center p-3 border rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-medium text-green-800">{slot.studio}</span>
+                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                    Beschikbaar
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600">{slot.day}</p>
+                <p className="text-xs text-gray-500">{slot.timeSlot}</p>
+                <p className="text-xs text-gray-400">{new Date(slot.date).toLocaleDateString('nl-BE')}</p>
+              </div>
+              <button 
+                onClick={() => quickBookSlot(slot)}
+                className="btn btn-primary text-xs ml-3"
+                title={`Boek ${slot.studio} - ${slot.day} ${slot.slot}`}
+              >
+                <Zap className="w-3 h-3 mr-1" />
+                Boek Nu
+              </button>
             </div>
           ))}
         </div>
+        
+        {availableSlots.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <p>Geen beschikbare slots deze week</p>
+            <p className="text-sm">Probeer volgende week of neem contact op</p>
+          </div>
+        )}
       </div>
 
       {/* Action Button */}
