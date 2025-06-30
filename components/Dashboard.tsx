@@ -1,6 +1,4 @@
 // components/Dashboard.tsx
-'use client';
-
 import React, { useState, useEffect } from 'react';
 import { 
   TrendingUp, 
@@ -26,8 +24,8 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
   const [activeTab, setActiveTab] = useState('dashboard');
   const [calculator] = useState(new BusinessCalculator(config));
 
-  // Simuleer huidige data (later uit Firebase)
-  const [currentData, setCurrentData] = useState({
+  // Simuleer huidige data
+  const [currentData] = useState({
     monthlyRevenue: 2080,
     occupancyRate: 25,
     activeLockers: 5,
@@ -66,36 +64,6 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
           <p className="text-sm text-gray-500">{subtitle}</p>
         </div>
         <Icon className={`w-8 h-8 text-${color}-500`} />
-      </div>
-    </div>
-  );
-
-  const StudioStatus = ({ studio, isOccupied, currentUser, nextBooking, temperature }: {
-    studio: any;
-    isOccupied: boolean;
-    currentUser?: string;
-    nextBooking?: string;
-    temperature: number;
-  }) => (
-    <div className={`p-4 rounded-lg border ${isOccupied ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
-      <div className="flex justify-between items-center mb-2">
-        <h4 className="font-semibold">{studio.name}</h4>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          isOccupied ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-        }`}>
-          {isOccupied ? 'Bezet' : 'Vrij'}
-        </span>
-      </div>
-      <p className="text-sm text-gray-600">{studio.size}m² • €{studio.hourlyRate}/uur</p>
-      {currentUser && (
-        <p className="text-sm font-medium text-blue-600 mt-1">👥 {currentUser}</p>
-      )}
-      <div className="flex justify-between items-center mt-2">
-        <span className="text-sm text-gray-500 flex items-center gap-1">
-          <Thermometer className="w-4 h-4" />
-          {temperature}°C
-        </span>
-        <span className="text-sm text-gray-500">{nextBooking || 'Geen boekingen'}</span>
       </div>
     </div>
   );
@@ -147,22 +115,6 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
                   <span className="text-sm">€/mnd</span>
                 </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Utilities:</span>
-                <div className="flex items-center gap-2">
-                  <input 
-                    type="number" 
-                    value={config.operationalCosts.utilities}
-                    onChange={(e) => {
-                      const newConfig = { ...config };
-                      newConfig.operationalCosts.utilities = Number(e.target.value);
-                      onConfigChange?.(newConfig);
-                    }}
-                    className="w-20 px-2 py-1 border rounded text-sm"
-                  />
-                  <span className="text-sm">€/mnd</span>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -194,17 +146,17 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span>Omzet:</span>
-                  <span className="font-medium">€{scenario.totalRevenue}</span>
+                  <span className="font-medium">€{Math.round(scenario.totalRevenue)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Winst:</span>
                   <span className={`font-medium ${scenario.profit > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    €{scenario.profit}
+                    €{Math.round(scenario.profit)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Per partner:</span>
-                  <span className="font-medium">€{scenario.profitPerPartner}</span>
+                  <span className="font-medium">€{Math.round(scenario.profitPerPartner)}</span>
                 </div>
               </div>
             </div>
@@ -258,41 +210,23 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
               />
             </div>
 
-            {/* Studio Status */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Studio Status
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <StudioStatus 
-                  studio={config.studios[0]} 
-                  isOccupied={true}
-                  currentUser="The Foxes"
-                  nextBooking="Volgende: 14:00"
-                  temperature={21}
-                />
-                <StudioStatus 
-                  studio={config.studios[1]} 
-                  isOccupied={false}
-                  nextBooking="Volgende: 16:00"
-                  temperature={19}
-                />
-                <StudioStatus 
-                  studio={config.studios[2]} 
-                  isOccupied={true}
-                  currentUser="DJ Mike"
-                  nextBooking="Volgende: 15:30"
-                  temperature={22}
-                />
-              </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="text-blue-800 font-semibold">🎉 Deployment Gelukt!</h3>
+              <p className="text-blue-700 text-sm mt-1">
+                Je REPKOT beheertool draait nu live! Firebase integratie wordt binnenkort toegevoegd.
+              </p>
             </div>
           </div>
         );
       case 'config':
         return <ConfigPanel />;
       default:
-        return <div>Tab content voor {activeTab}</div>;
+        return (
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <h3 className="text-lg font-semibold mb-4">{activeTab} - Binnenkort beschikbaar</h3>
+            <p className="text-gray-600">Deze functionaliteit wordt binnenkort toegevoegd.</p>
+          </div>
+        );
     }
   };
 
@@ -324,12 +258,6 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
           <div className="flex space-x-8 overflow-x-auto">
             {[
               { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
-              { id: 'subscriptions', label: 'Abonnementen', icon: Calendar },
-              { id: 'bookings', label: 'Losse Boekingen', icon: Calendar },
-              { id: 'access', label: 'Toegang', icon: KeyRound },
-              { id: 'climate', label: 'Klimaat', icon: Thermometer },
-              { id: 'lockers', label: 'Lockers', icon: Lock },
-              { id: 'finance', label: 'Financieel', icon: DollarSign },
               { id: 'config', label: 'Configuratie', icon: Settings }
             ].map(({ id, label, icon: Icon }) => (
               <button
