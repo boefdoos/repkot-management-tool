@@ -47,6 +47,8 @@ export default function ConfigurationManager({ config, onConfigChange }: Configu
     name: '',
     size: 20,
     hourlyRate: 10,
+    dayRate: 40,
+    monthlyRate: 160,
     maxCapacity: 6
   });
 
@@ -127,8 +129,8 @@ export default function ConfigurationManager({ config, onConfigChange }: Configu
       name: newStudio.name,
       size: newStudio.size,
       hourlyRate: newStudio.hourlyRate,
-      dayRate: newStudio.hourlyRate * 4,
-      monthlyRate: newStudio.hourlyRate * 16,
+      dayRate: newStudio.dayRate,
+      monthlyRate: newStudio.monthlyRate,
       maxCapacity: newStudio.maxCapacity
     };
 
@@ -136,18 +138,14 @@ export default function ConfigurationManager({ config, onConfigChange }: Configu
       studios: [...localConfig.studios, studio]
     });
 
-    setNewStudio({ name: '', size: 20, hourlyRate: 10, maxCapacity: 6 });
+    setNewStudio({ name: '', size: 20, hourlyRate: 10, dayRate: 40, monthlyRate: 160, maxCapacity: 6 });
   };
 
   const updateStudio = (studioId: string, updates: any) => {
     const updatedStudios = localConfig.studios.map(studio => {
       if (studio.id === studioId) {
         const updatedStudio = { ...studio, ...updates };
-        // Auto-calculate derived rates
-        if (updates.hourlyRate) {
-          updatedStudio.dayRate = updates.hourlyRate * 4;
-          updatedStudio.monthlyRate = updates.hourlyRate * 16;
-        }
+        // Geen automatische berekening meer - alle tarieven zijn onafhankelijk instelbaar
         return updatedStudio;
       }
       return studio;
@@ -178,7 +176,7 @@ export default function ConfigurationManager({ config, onConfigChange }: Configu
             <div key={studio.id} className="border rounded-lg p-4">
               {editingStudio === studio.id ? (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Naam</label>
                       <input
@@ -203,6 +201,24 @@ export default function ConfigurationManager({ config, onConfigChange }: Configu
                         type="number"
                         value={studio.hourlyRate}
                         onChange={(e) => updateStudio(studio.id, { hourlyRate: Number(e.target.value) })}
+                        className="form-input"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Dagdeel Tarief (€)</label>
+                      <input
+                        type="number"
+                        value={studio.dayRate}
+                        onChange={(e) => updateStudio(studio.id, { dayRate: Number(e.target.value) })}
+                        className="form-input"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Maand Tarief (€)</label>
+                      <input
+                        type="number"
+                        value={studio.monthlyRate}
+                        onChange={(e) => updateStudio(studio.id, { monthlyRate: Number(e.target.value) })}
                         className="form-input"
                       />
                     </div>
@@ -267,7 +283,7 @@ export default function ConfigurationManager({ config, onConfigChange }: Configu
       {/* Add New Studio */}
       <div className="bg-white p-6 rounded-lg shadow-sm border">
         <h3 className="text-lg font-semibold mb-4">Nieuwe Studio Toevoegen</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Studio Naam</label>
             <input
@@ -297,6 +313,24 @@ export default function ConfigurationManager({ config, onConfigChange }: Configu
             />
           </div>
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Dagdeel Tarief (€)</label>
+            <input
+              type="number"
+              value={newStudio.dayRate}
+              onChange={(e) => setNewStudio(prev => ({ ...prev, dayRate: Number(e.target.value) }))}
+              className="form-input"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Maand Tarief (€)</label>
+            <input
+              type="number"
+              value={newStudio.monthlyRate}
+              onChange={(e) => setNewStudio(prev => ({ ...prev, monthlyRate: Number(e.target.value) }))}
+              className="form-input"
+            />
+          </div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Max Capaciteit</label>
             <input
               type="number"
@@ -314,21 +348,40 @@ export default function ConfigurationManager({ config, onConfigChange }: Configu
         </div>
 
         {/* Rate Preview */}
-        {newStudio.hourlyRate > 0 && (
+        {newStudio.name && (
           <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-            <h4 className="font-medium text-blue-800 mb-2">Tarief Preview</h4>
-            <div className="grid grid-cols-3 gap-4 text-sm">
+            <h4 className="font-medium text-blue-800 mb-2">Tarief Overzicht</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
-                <span className="text-gray-600">Dagdeel (4u):</span>
-                <span className="font-semibold ml-2">€{newStudio.hourlyRate * 4}</span>
+                <span className="text-gray-600">Per uur:</span>
+                <span className="font-semibold ml-2">€{newStudio.hourlyRate}</span>
               </div>
               <div>
-                <span className="text-gray-600">Maandabo (16u):</span>
-                <span className="font-semibold ml-2">€{newStudio.hourlyRate * 16}</span>
+                <span className="text-gray-600">Per dagdeel:</span>
+                <span className="font-semibold ml-2">€{newStudio.dayRate}</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Per maand:</span>
+                <span className="font-semibold ml-2">€{newStudio.monthlyRate}</span>
               </div>
               <div>
                 <span className="text-gray-600">Per m²/uur:</span>
                 <span className="font-semibold ml-2">€{(newStudio.hourlyRate / newStudio.size).toFixed(2)}</span>
+              </div>
+            </div>
+            
+            {/* Efficiency Indicators */}
+            <div className="mt-3 pt-3 border-t border-blue-200">
+              <h5 className="text-xs font-medium text-blue-700 mb-2">Efficiency Check:</h5>
+              <div className="grid grid-cols-2 gap-4 text-xs">
+                <div className={`${newStudio.dayRate >= newStudio.hourlyRate * 3 ? 'text-green-700' : 'text-red-700'}`}>
+                  Dagdeel vs 3u: {newStudio.dayRate >= newStudio.hourlyRate * 3 ? '✓' : '⚠'} 
+                  (€{newStudio.dayRate} vs €{newStudio.hourlyRate * 3})
+                </div>
+                <div className={`${newStudio.monthlyRate <= newStudio.dayRate * 5 ? 'text-green-700' : 'text-red-700'}`}>
+                  Maand vs 5 dagdelen: {newStudio.monthlyRate <= newStudio.dayRate * 5 ? '✓' : '⚠'} 
+                  (€{newStudio.monthlyRate} vs €{newStudio.dayRate * 5})
+                </div>
               </div>
             </div>
           </div>
@@ -380,15 +433,15 @@ export default function ConfigurationManager({ config, onConfigChange }: Configu
             </div>
             <div>
               <p className="text-2xl font-bold text-green-600">
-                €{Math.round(localConfig.studios.reduce((sum, studio) => sum + (studio.hourlyRate * 30 * 8), 0))}
+                €{Math.round(localConfig.studios.reduce((sum, studio) => sum + (studio.monthlyRate * 4), 0))}
               </p>
-              <p className="text-sm text-gray-500">Max Omzet/mnd</p>
+              <p className="text-sm text-gray-500">Max Omzet/mnd (bij 4 maandabos)</p>
             </div>
             <div>
               <p className="text-2xl font-bold text-orange-600">
-                {Math.round((Object.values(localConfig.operationalCosts).reduce((sum, cost) => sum + cost, 0) / localConfig.studios.reduce((sum, studio) => sum + (studio.hourlyRate * 30 * 8), 0)) * 100)}%
+                {Math.round((Object.values(localConfig.operationalCosts).reduce((sum, cost) => sum + cost, 0) / localConfig.studios.reduce((sum, studio) => sum + (studio.monthlyRate * 4), 0)) * 100)}%
               </p>
-              <p className="text-sm text-gray-500">Break-even bezetting</p>
+              <p className="text-sm text-gray-500">Break-even bij maandabos</p>
             </div>
           </div>
         </div>
