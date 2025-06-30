@@ -39,6 +39,29 @@ const [newMaintenance, setNewMaintenance] = useState({
   priority: 'medium',
   location: ''
 });
+const [maintenanceIssues, setMaintenanceIssues] = useState([
+  {
+    id: 'maint-001',
+    title: 'Studio B - Thermostaat error',
+    description: 'Thermostaat reageert niet op temperatuurwijzigingen',
+    priority: 'high',
+    location: 'studio-b',
+    status: 'open',
+    reportedDate: '2025-06-25',
+    reportedBy: 'Partner 1'
+  },
+  {
+    id: 'maint-002', 
+    title: 'Locker 4 - Slot klemming',
+    description: 'Slot van locker 4 klemt bij openen',
+    priority: 'medium',
+    location: 'lockers',
+    status: 'resolved',
+    reportedDate: '2025-06-22',
+    resolvedDate: '2025-06-22',
+    reportedBy: 'Partner 2'
+  }
+]);
 
   // Simuleer huidige data - later uit Firebase
   const [currentData] = useState({
@@ -488,190 +511,313 @@ const ClimateControl = () => (
     </div>
   );
 
-  const MaintenancePanel = () => {
-    const [tasks, setTasks] = useState([
-      { id: 1, title: 'Filter ventilatie vervangen', date: '2025-07-15', status: 'Binnenkort' },
-      { id: 2, title: 'Akoestische panelen controle', date: '2025-08-01', status: 'Gepland' }
-    ]);
-
-    const [issues, setIssues] = useState([
-      { id: 1, title: 'Studio B - Thermostaat error', date: '2025-06-25', status: 'Open' },
-      { id: 2, title: 'Locker 4 - Slot klemming', date: '2025-06-22', status: 'Opgelost' }
-    ]);
-
-    const [showNewIssueForm, setShowNewIssueForm] = useState(false);
-    const [newIssue, setNewIssue] = useState({ title: '', description: '' });
-
-    const reportNewIssue = () => {
-      if (!newIssue.title) {
-        alert('Vul een titel in');
-        return;
-      }
-
-      const issue = {
-        id: Date.now(),
-        title: newIssue.title,
-        date: new Date().toISOString().split('T')[0],
-        status: 'Open'
-      };
-
-      setIssues(prev => [issue, ...prev]);
-      setNewIssue({ title: '', description: '' });
-      setShowNewIssueForm(false);
-      alert('Probleem gemeld!');
-    };
-
-    return (
-      <div className="space-y-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Wrench className="w-5 h-5" />
-            Onderhoud & Monitoring
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-semibold mb-3">Geplande Taken</h4>
-              <div className="space-y-3">
-                {tasks.map(task => (
-                  <div key={task.id} className="flex justify-between items-center p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium">{task.title}</p>
-                      <p className="text-sm text-gray-500">Vervaldatum: {new Date(task.date).toLocaleDateString('nl-BE')}</p>
-                    </div>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      task.status === 'Binnenkort' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-                    }`}>
-                      {task.status}
-                    </span>
-                  </div>
-                ))}
+  const MaintenancePanel = () => (
+  <div className="space-y-6">
+    <div className="bg-white p-6 rounded-lg shadow-sm border">
+      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+        <Wrench className="w-5 h-5" />
+        Onderhoud & Monitoring
+      </h3>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <h4 className="font-semibold mb-3">Geplande Taken</h4>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center p-3 border rounded-lg">
+              <div>
+                <p className="font-medium">Filter ventilatie vervangen</p>
+                <p className="text-sm text-gray-500">Vervaldatum: 15 juli 2025</p>
               </div>
+              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
+                Binnenkort
+              </span>
             </div>
             
-            <div>
-              <h4 className="font-semibold mb-3">Recente Problemen</h4>
-              <div className="space-y-3">
-                {issues.slice(0, 2).map(issue => (
-                  <div key={issue.id} className="flex justify-between items-center p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium">{issue.title}</p>
-                      <p className="text-sm text-gray-500">
-                        {issue.status === 'Open' ? 'Gerapporteerd' : 'Opgelost'}: {new Date(issue.date).toLocaleDateString('nl-BE')}
-                      </p>
-                    </div>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      issue.status === 'Open' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {issue.status}
-                    </span>
-                  </div>
-                ))}
+            <div className="flex justify-between items-center p-3 border rounded-lg">
+              <div>
+                <p className="font-medium">Akoestische panelen controle</p>
+                <p className="text-sm text-gray-500">Vervaldatum: 1 augustus 2025</p>
               </div>
-<button 
-  onClick={() => setShowMaintenanceForm(true)}
-  className="btn btn-primary mt-3 w-full"
->
-  Nieuw Probleem Melden
-</button>
+              <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                Gepland
+              </span>
             </div>
           </div>
         </div>
-
-{/* Maintenance Problem Form */}
-{showMaintenanceForm && (
-  <div className="bg-white p-6 rounded-lg shadow-sm border">
-    <h3 className="text-lg font-semibold mb-4">Nieuw Onderhoudsprobleem Melden</h3>
-    
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Titel/Probleem
-        </label>
-        <input
-          type="text"
-          value={newMaintenance.title}
-          onChange={(e) => setNewMaintenance(prev => ({ ...prev, title: e.target.value }))}
-          className="form-input"
-          placeholder="Korte beschrijving van het probleem"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Locatie
-        </label>
-        <select
-          value={newMaintenance.location}
-          onChange={(e) => setNewMaintenance(prev => ({ ...prev, location: e.target.value }))}
-          className="form-input"
-        >
-          <option value="">Selecteer locatie</option>
-          <option value="studio-a">Studio A</option>
-          <option value="studio-b">Studio B</option>
-          <option value="studio-c">Studio C</option>
-          <option value="common">Gemeenschappelijke ruimte</option>
-          <option value="lockers">Lockers</option>
-          <option value="entrance">Ingang/Toegang</option>
-          <option value="technical">Technische ruimte</option>
-        </select>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Prioriteit
-        </label>
-        <select
-          value={newMaintenance.priority}
-          onChange={(e) => setNewMaintenance(prev => ({ ...prev, priority: e.target.value }))}
-          className="form-input"
-        >
-          <option value="low">Laag - Kan wachten</option>
-          <option value="medium">Gemiddeld - Binnen week</option>
-          <option value="high">Hoog - Binnen 24u</option>
-          <option value="urgent">Urgent - Direct</option>
-        </select>
-      </div>
-
-      <div className="md:col-span-2">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Gedetailleerde Beschrijving
-        </label>
-        <textarea
-          value={newMaintenance.description}
-          onChange={(e) => setNewMaintenance(prev => ({ ...prev, description: e.target.value }))}
-          className="form-input"
-          rows={3}
-          placeholder="Beschrijf het probleem in detail: wat is er aan de hand, wanneer treedt het op, welke impact heeft het..."
-        />
+        
+        <div>
+          <h4 className="font-semibold mb-3">Recente Problemen</h4>
+          <div className="space-y-3">
+            {maintenanceIssues.slice(0, 2).map(issue => (
+              <div key={issue.id} className="flex justify-between items-center p-3 border rounded-lg">
+                <div>
+                  <p className="font-medium">{issue.title}</p>
+                  <p className="text-sm text-gray-500">
+                    Gerapporteerd: {new Date(issue.reportedDate).toLocaleDateString('nl-BE')}
+                  </p>
+                </div>
+                <span className={`px-2 py-1 rounded-full text-xs ${
+                  issue.status === 'open' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                }`}>
+                  {issue.status === 'open' ? 'Open' : 'Opgelost'}
+                </span>
+              </div>
+            ))}
+          </div>
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowMaintenanceForm(true);
+            }}
+            className="btn btn-primary mt-3 w-full"
+          >
+            Nieuw Probleem Melden
+          </button>
+        </div>
       </div>
     </div>
 
-    <div className="mt-6 flex gap-2">
-      <button 
-        onClick={() => {
-          console.log('Nieuw onderhoudsprobleem gemeld:', newMaintenance);
-          setNewMaintenance({ title: '', description: '', priority: 'medium', location: '' });
-          setShowMaintenanceForm(false);
-        }}
-        className="btn btn-primary"
-        disabled={!newMaintenance.title || !newMaintenance.location}
-      >
-        Probleem Melden
-      </button>
-      <button 
-        onClick={() => {
-          setNewMaintenance({ title: '', description: '', priority: 'medium', location: '' });
-          setShowMaintenanceForm(false);
-        }}
-        className="btn btn-secondary"
-      >
-        Annuleren
-      </button>
+    {/* All Maintenance Issues */}
+    <div className="bg-white p-6 rounded-lg shadow-sm border">
+      <h3 className="text-lg font-semibold mb-4">Alle Onderhoudsproblemen</h3>
+      <div className="space-y-3">
+        {maintenanceIssues.map(issue => (
+          <div key={issue.id} className="border rounded-lg p-4">
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h4 className="font-semibold">{issue.title}</h4>
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    issue.status === 'open' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                  }`}>
+                    {issue.status === 'open' ? 'Open' : 'Opgelost'}
+                  </span>
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    issue.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                    issue.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                    issue.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-blue-100 text-blue-800'
+                  }`}>
+                    {issue.priority === 'urgent' ? 'Urgent' :
+                     issue.priority === 'high' ? 'Hoog' :
+                     issue.priority === 'medium' ? 'Gemiddeld' : 'Laag'}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 mb-1">{issue.description}</p>
+                <p className="text-xs text-gray-500">
+                  Locatie: {issue.location} • Gemeld door: {issue.reportedBy} • {new Date(issue.reportedDate).toLocaleDateString('nl-BE')}
+                  {issue.resolvedDate && ` • Opgelost: ${new Date(issue.resolvedDate).toLocaleDateString('nl-BE')}`}
+                </p>
+              </div>
+              <div className="ml-4">
+                {issue.status === 'open' ? (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setMaintenanceIssues(prev => prev.map(item => 
+                        item.id === issue.id 
+                          ? { ...item, status: 'resolved', resolvedDate: new Date().toISOString().split('T')[0] }
+                          : item
+                      ));
+                    }}
+                    className="btn btn-success text-xs"
+                  >
+                    Als Opgelost Markeren
+                  </button>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setMaintenanceIssues(prev => prev.map(item => 
+                        item.id === issue.id 
+                          ? { ...item, status: 'open', resolvedDate: undefined }
+                          : item
+                      ));
+                    }}
+                    className="btn btn-secondary text-xs"
+                  >
+                    Heropenen
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* Maintenance Problem Form */}
+    {showMaintenanceForm && (
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <h3 className="text-lg font-semibold mb-4">Nieuw Onderhoudsprobleem Melden</h3>
+        
+        <form onSubmit={(e) => e.preventDefault()}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Titel/Probleem
+              </label>
+              <input
+                type="text"
+                value={newMaintenance.title}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  setNewMaintenance(prev => ({ ...prev, title: e.target.value }));
+                }}
+                className="form-input"
+                placeholder="Korte beschrijving van het probleem"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Locatie
+              </label>
+              <select
+                value={newMaintenance.location}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  setNewMaintenance(prev => ({ ...prev, location: e.target.value }));
+                }}
+                className="form-input"
+              >
+                <option value="">Selecteer locatie</option>
+                <option value="studio-a">Studio A</option>
+                <option value="studio-b">Studio B</option>
+                <option value="studio-c">Studio C</option>
+                <option value="common">Gemeenschappelijke ruimte</option>
+                <option value="lockers">Lockers</option>
+                <option value="entrance">Ingang/Toegang</option>
+                <option value="technical">Technische ruimte</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Prioriteit
+              </label>
+              <select
+                value={newMaintenance.priority}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  setNewMaintenance(prev => ({ ...prev, priority: e.target.value }));
+                }}
+                className="form-input"
+              >
+                <option value="low">Laag - Kan wachten</option>
+                <option value="medium">Gemiddeld - Binnen week</option>
+                <option value="high">Hoog - Binnen 24u</option>
+                <option value="urgent">Urgent - Direct</option>
+              </select>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Gedetailleerde Beschrijving
+              </label>
+              <textarea
+                value={newMaintenance.description}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  setNewMaintenance(prev => ({ ...prev, description: e.target.value }));
+                }}
+                className="form-input"
+                rows={3}
+                placeholder="Beschrijf het probleem in detail: wat is er aan de hand, wanneer treedt het op, welke impact heeft het..."
+              />
+            </div>
+          </div>
+
+          <div className="mt-6 flex gap-2">
+            <button 
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const newIssue = {
+                  id: `maint-${Date.now()}`,
+                  title: newMaintenance.title,
+                  description: newMaintenance.description,
+                  priority: newMaintenance.priority,
+                  location: newMaintenance.location,
+                  status: 'open',
+                  reportedDate: new Date().toISOString().split('T')[0],
+                  reportedBy: 'Partner Dashboard'
+                };
+                
+                setMaintenanceIssues(prev => [newIssue, ...prev]);
+                setNewMaintenance({ title: '', description: '', priority: 'medium', location: '' });
+                setShowMaintenanceForm(false);
+              }}
+              className="btn btn-primary"
+              disabled={!newMaintenance.title || !newMaintenance.location}
+            >
+              Probleem Melden
+            </button>
+            <button 
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setNewMaintenance({ title: '', description: '', priority: 'medium', location: '' });
+                setShowMaintenanceForm(false);
+              }}
+              className="btn btn-secondary"
+            >
+              Annuleren
+            </button>
+          </div>
+        </form>
+      </div>
+    )}
+
+    {/* Emergency Contacts */}
+    <div className="bg-white p-6 rounded-lg shadow-sm border">
+      <h3 className="text-lg font-semibold mb-4">Noodcontacten</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-4 border rounded-lg">
+          <h4 className="font-semibold">Partner 1 (Technisch)</h4>
+          <p className="text-sm text-gray-600 mb-2">Primair contact voor technische problemen</p>
+          <div className="space-y-1">
+            <a href="tel:+32123456789" className="flex items-center gap-2 text-blue-600 text-sm">
+              📞 +32 123 45 67 89
+            </a>
+            <a href="mailto:partner1@repkot.be" className="flex items-center gap-2 text-blue-600 text-sm">
+              📧 partner1@repkot.be
+            </a>
+          </div>
+        </div>
+        
+        <div className="p-4 border rounded-lg">
+          <h4 className="font-semibold">Partner 2 (Zakelijk)</h4>
+          <p className="text-sm text-gray-600 mb-2">Primair contact voor klanten/administratie</p>
+          <div className="space-y-1">
+            <a href="tel:+32987654321" className="flex items-center gap-2 text-blue-600 text-sm">
+              📞 +32 98 76 54 321
+            </a>
+            <a href="mailto:partner2@repkot.be" className="flex items-center gap-2 text-blue-600 text-sm">
+              📧 partner2@repkot.be
+            </a>
+          </div>
+        </div>
+        
+        <div className="p-4 border rounded-lg">
+          <h4 className="font-semibold">Externe Diensten</h4>
+          <p className="text-sm text-gray-600 mb-2">Voor urgente technische problemen</p>
+          <div className="space-y-1 text-sm">
+            <div><strong>Elektricien:</strong> +32 111 22 33 44</div>
+            <div><strong>Verwarming:</strong> +32 555 66 77 88</div>
+            <div><strong>Beveiliging:</strong> +32 999 88 77 66</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-)}
-
+);
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <h3 className="text-lg font-semibold mb-4">Noodcontacten</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
