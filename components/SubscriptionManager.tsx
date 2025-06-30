@@ -119,7 +119,7 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
     startDate: [validators.required]
   });
 
-  const { values, errors, touched, setValue, setTouched, validateAll, reset } = formValidation;
+  const { values, errors, touched, setValue, setTouched: setFieldTouched, validateAll, reset } = formValidation;
 
   const studioOptions = config.studios.map(studio => ({
     value: studio.id,
@@ -340,7 +340,7 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
               label="Band/Artist Naam"
               value={values.customerName}
               onChange={(e) => setValue('customerName', e.target.value)}
-              onBlur={() => setTouched('customerName')}
+              onBlur={() => setFieldTouched('customerName')}
               error={touched.customerName ? errors.customerName : undefined}
               placeholder="Naam van de band"
               required
@@ -351,7 +351,7 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
               type="email"
               value={values.customerEmail}
               onChange={(e) => setValue('customerEmail', e.target.value)}
-              onBlur={() => setTouched('customerEmail')}
+              onBlur={() => setFieldTouched('customerEmail')}
               error={touched.customerEmail ? errors.customerEmail : undefined}
               placeholder="contact@band.com"
               required
@@ -361,7 +361,7 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
               label="Studio"
               value={values.studioId}
               onChange={(e) => setValue('studioId', e.target.value)}
-              onBlur={() => setTouched('studioId')}
+              onBlur={() => setFieldTouched('studioId')}
               error={touched.studioId ? errors.studioId : undefined}
               options={studioOptions}
               placeholder="Selecteer studio"
@@ -379,7 +379,7 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
               label="Start Datum"
               value={values.startDate}
               onChange={(e) => setValue('startDate', e.target.value)}
-              onBlur={() => setTouched('startDate')}
+              onBlur={() => setFieldTouched('startDate')}
               error={touched.startDate ? errors.startDate : undefined}
               min={new Date().toISOString().split('T')[0]}
               required
