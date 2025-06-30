@@ -1,13 +1,7 @@
-// components/SubscriptionManager.tsx (Updated with simplified forms)
+// components/SubscriptionManager.tsx
 import React, { useState } from 'react';
 import { Users, Plus, Calendar, DollarSign, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { BusinessConfig } from '../lib/config';
-import { 
-  TextInput, 
-  SelectInput, 
-  DateInput, 
-  FormField 
-} from './FormComponents';
 
 interface Subscription {
   id: string;
@@ -39,8 +33,8 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
       studioId: 'studio-a',
       studioName: 'Studio A',
       schedule: [
-        { day: 'Maandag', timeSlot: 'Ochtend (10:00-13:00)' },
-        { day: 'Donderdag', timeSlot: 'Avond (18:00-21:00)' }
+        { day: 'Maandag', timeSlot: 'Ochtend (10:00-14:00)' },
+        { day: 'Donderdag', timeSlot: 'Avond (18:00-22:00)' }
       ],
       startDate: '2025-03-15',
       nextBilling: '2025-07-15',
@@ -55,8 +49,8 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
       studioId: 'studio-b',
       studioName: 'Studio B',
       schedule: [
-        { day: 'Dinsdag', timeSlot: 'Avond (18:00-21:00)' },
-        { day: 'Vrijdag', timeSlot: 'Avond (18:00-21:00)' }
+        { day: 'Dinsdag', timeSlot: 'Avond (18:00-22:00)' },
+        { day: 'Vrijdag', timeSlot: 'Avond (18:00-22:00)' }
       ],
       startDate: '2025-04-01',
       nextBilling: '2025-08-01',
@@ -71,8 +65,8 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
       studioId: 'studio-c',
       studioName: 'Studio C',
       schedule: [
-        { day: 'Woensdag', timeSlot: 'Middag (14:00-17:00)' },
-        { day: 'Zaterdag', timeSlot: 'Ochtend (10:00-13:00)' }
+        { day: 'Woensdag', timeSlot: 'Middag (14:00-18:00)' },
+        { day: 'Zaterdag', timeSlot: 'Ochtend (10:00-14:00)' }
       ],
       startDate: '2025-05-10',
       nextBilling: '2025-07-10',
@@ -87,8 +81,8 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
       studioId: 'studio-b',
       studioName: 'Studio B',
       schedule: [
-        { day: 'Zaterdag', timeSlot: 'Middag (14:00-17:00)' },
-        { day: 'Dinsdag', timeSlot: 'Ochtend (10:00-13:00)' }
+        { day: 'Zaterdag', timeSlot: 'Middag (14:00-18:00)' },
+        { day: 'Dinsdag', timeSlot: 'Ochtend (10:00-14:00)' }
       ],
       startDate: '2025-06-01',
       nextBilling: '2025-08-01',
@@ -178,7 +172,7 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
   }));
 
   const subscriptionTypeOptions = [
-    { value: 'monthly', label: 'Standaard Maandabonnement' },
+    { value: 'monthly', label: 'Standaard Maandabonnement (2x4u/week)' },
     { value: 'student', label: `Student Maandabonnement (-${config.discounts.student}%)` },
     { value: 'yearly', label: `Jaarabonnement (-${config.discounts.bulk}%)` }
   ];
@@ -194,10 +188,10 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
   ];
 
   const timeSlotOptions = [
-    { value: 'Ochtend (10:00-13:00)', label: 'Ochtend (10:00-13:00)' },
-    { value: 'Middag (14:00-17:00)', label: 'Middag (14:00-17:00)' },
-    { value: 'Avond (18:00-21:00)', label: 'Avond (18:00-21:00)' },
-    { value: 'Late Avond (19:00-22:00)', label: 'Late Avond (19:00-22:00)' }
+    { value: 'Ochtend (10:00-14:00)', label: 'Ochtend (10:00-14:00)' },
+    { value: 'Middag (14:00-18:00)', label: 'Middag (14:00-18:00)' },
+    { value: 'Avond (18:00-22:00)', label: 'Avond (18:00-22:00)' },
+    { value: 'Late Avond (19:00-23:00)', label: 'Late Avond (19:00-23:00)' }
   ];
 
   const getStatusColor = (status: string) => {
@@ -352,7 +346,7 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
         <MetricCard
           title="Gemiddelde Prijs"
           value={`€${Math.round(calculateMonthlyRecurringRevenue() / subscriptions.filter(s => s.status === 'active').length)}`}
-          subtitle="4 dagdelen/maand"
+          subtitle="2 dagdelen/week (8u)"
           icon={Calendar}
           color="purple"
         />
@@ -395,101 +389,156 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <TextInput
-              label="Band/Artist Naam"
-              value={formData.customerName}
-              onChange={(e) => handleInputChange('customerName', e.target.value)}
-              onBlur={(e) => handleInputBlur('customerName', e.target.value)}
-              error={formErrors.customerName}
-              placeholder="Naam van de band"
-              required
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Band/Artist Naam *
+              </label>
+              <input
+                type="text"
+                value={formData.customerName}
+                onChange={(e) => handleInputChange('customerName', e.target.value)}
+                onBlur={(e) => handleInputBlur('customerName', e.target.value)}
+                className={`form-input ${formErrors.customerName ? 'border-red-300' : ''}`}
+                placeholder="Naam van de band"
+              />
+              {formErrors.customerName && (
+                <p className="text-red-600 text-xs mt-1">{formErrors.customerName}</p>
+              )}
+            </div>
 
-            <TextInput
-              label="Contact Email"
-              type="email"
-              value={formData.customerEmail}
-              onChange={(e) => handleInputChange('customerEmail', e.target.value)}
-              onBlur={(e) => handleInputBlur('customerEmail', e.target.value)}
-              error={formErrors.customerEmail}
-              placeholder="contact@band.com"
-              required
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Contact Email *
+              </label>
+              <input
+                type="email"
+                value={formData.customerEmail}
+                onChange={(e) => handleInputChange('customerEmail', e.target.value)}
+                onBlur={(e) => handleInputBlur('customerEmail', e.target.value)}
+                className={`form-input ${formErrors.customerEmail ? 'border-red-300' : ''}`}
+                placeholder="contact@band.com"
+              />
+              {formErrors.customerEmail && (
+                <p className="text-red-600 text-xs mt-1">{formErrors.customerEmail}</p>
+              )}
+            </div>
 
-            <SelectInput
-              label="Studio"
-              value={formData.studioId}
-              onChange={(e) => handleInputChange('studioId', e.target.value)}
-              onBlur={(e) => handleInputBlur('studioId', e.target.value)}
-              error={formErrors.studioId}
-              options={studioOptions}
-              placeholder="Selecteer studio"
-              required
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Studio *
+              </label>
+              <select
+                value={formData.studioId}
+                onChange={(e) => handleInputChange('studioId', e.target.value)}
+                onBlur={(e) => handleInputBlur('studioId', e.target.value)}
+                className={`form-input ${formErrors.studioId ? 'border-red-300' : ''}`}
+              >
+                <option value="">Selecteer studio</option>
+                {studioOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {formErrors.studioId && (
+                <p className="text-red-600 text-xs mt-1">{formErrors.studioId}</p>
+              )}
+            </div>
 
-            <SelectInput
-              label="Abonnement Type"
-              value={formData.type}
-              onChange={(e) => handleInputChange('type', e.target.value)}
-              options={subscriptionTypeOptions}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Abonnement Type
+              </label>
+              <select
+                value={formData.type}
+                onChange={(e) => handleInputChange('type', e.target.value)}
+                className="form-input"
+              >
+                {subscriptionTypeOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-            <DateInput
-              label="Start Datum"
-              value={formData.startDate}
-              onChange={(e) => handleInputChange('startDate', e.target.value)}
-              onBlur={(e) => handleInputBlur('startDate', e.target.value)}
-              error={formErrors.startDate}
-              min={new Date().toISOString().split('T')[0]}
-              required
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Start Datum *
+              </label>
+              <input
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => handleInputChange('startDate', e.target.value)}
+                onBlur={(e) => handleInputBlur('startDate', e.target.value)}
+                className={`form-input ${formErrors.startDate ? 'border-red-300' : ''}`}
+                min={new Date().toISOString().split('T')[0]}
+              />
+              {formErrors.startDate && (
+                <p className="text-red-600 text-xs mt-1">{formErrors.startDate}</p>
+              )}
+            </div>
           </div>
 
           {/* Schedule Slots */}
           <div className="mt-6">
-            <FormField label="Wekelijkse Planning" required>
-              <div className="space-y-3">
-                {formData.scheduleSlots.map((slot, index) => (
-                  <div key={index} className="flex gap-3 items-end">
-                    <div className="flex-1">
-                      <SelectInput
-                        label={`Dag ${index + 1}`}
-                        value={slot.day}
-                        onChange={(e) => updateScheduleSlot(index, 'day', e.target.value)}
-                        options={dayOptions}
-                        placeholder="Selecteer dag"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <SelectInput
-                        label={`Tijdslot ${index + 1}`}
-                        value={slot.timeSlot}
-                        onChange={(e) => updateScheduleSlot(index, 'timeSlot', e.target.value)}
-                        options={timeSlotOptions}
-                        placeholder="Selecteer tijdslot"
-                      />
-                    </div>
-                    {formData.scheduleSlots.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeScheduleSlot(index)}
-                        className="btn btn-secondary mb-1"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Wekelijkse Planning (2 dagdelen van 4u) *
+            </label>
+            <div className="space-y-3">
+              {formData.scheduleSlots.map((slot, index) => (
+                <div key={index} className="flex gap-3 items-end">
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-500 mb-1">Dag {index + 1}</label>
+                    <select
+                      value={slot.day}
+                      onChange={(e) => updateScheduleSlot(index, 'day', e.target.value)}
+                      className="form-input"
+                    >
+                      <option value="">Selecteer dag</option>
+                      {dayOptions.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                ))}
-                
-                <button
-                  type="button"
-                  onClick={addScheduleSlot}
-                  className="btn btn-secondary text-sm"
-                >
-                  + Voeg tijdslot toe
-                </button>
-              </div>
-            </FormField>
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-500 mb-1">Tijdslot {index + 1}</label>
+                    <select
+                      value={slot.timeSlot}
+                      onChange={(e) => updateScheduleSlot(index, 'timeSlot', e.target.value)}
+                      className="form-input"
+                    >
+                      <option value="">Selecteer tijdslot</option>
+                      {timeSlotOptions.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {formData.scheduleSlots.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeScheduleSlot(index)}
+                      className="btn btn-secondary mb-1"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              
+              <button
+                type="button"
+                onClick={addScheduleSlot}
+                className="btn btn-secondary text-sm"
+                disabled={formData.scheduleSlots.length >= 3}
+              >
+                + Voeg tijdslot toe
+              </button>
+            </div>
           </div>
 
           {/* Price Preview */}
@@ -499,6 +548,9 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
                 <span className="font-medium">Maandprijs:</span>
                 <span className="text-xl font-bold text-blue-600">€{calculatePrice()}</span>
               </div>
+              <p className="text-sm text-blue-600 mt-1">
+                2 dagdelen van 4u per week = 8u totaal per week
+              </p>
               {formData.type === 'student' && (
                 <p className="text-sm text-blue-600 mt-1">
                   Inclusief {config.discounts.student}% studentenkorting
@@ -516,6 +568,7 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
             <button 
               onClick={createSubscription} 
               className="btn btn-primary"
+              disabled={!formData.customerName || !formData.customerEmail || !formData.studioId || !formData.startDate}
             >
               Abonnement Aanmaken
             </button>
@@ -566,6 +619,9 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
                   </p>
                   <p className="text-xs text-gray-500">
                     Planning: {subscription.schedule.map(s => `${s.day} ${s.timeSlot}`).join(', ')}
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    📅 {subscription.schedule.length} × 4u = {subscription.schedule.length * 4}u per week
                   </p>
                 </div>
                 <div className="text-right">
