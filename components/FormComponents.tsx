@@ -479,17 +479,17 @@ export function useFormValidation<T extends Record<string, any>>(
 ) {
   const [values, setValues] = useState<T>(initialValues);
   const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
-  const [touched, setTouched] = useState<Partial<Record<keyof T, boolean>>>({});
+  const [touchedFields, setTouchedFields] = useState<Partial<Record<keyof T, boolean>>>({});
 
   const setValue = (field: keyof T, value: any) => {
     setValues(prev => ({ ...prev, [field]: value }));
-    if (touched[field]) {
+    if (touchedFields[field]) {
       validateField(field, value);
     }
   };
 
   const setFieldTouched = (field: keyof T) => {
-    setTouched(prev => ({ ...prev, [field]: true }));
+    setTouchedFields(prev => ({ ...prev, [field]: true }));
     validateField(field, values[field]);
   };
 
@@ -523,7 +523,7 @@ export function useFormValidation<T extends Record<string, any>>(
     }
 
     setErrors(newErrors);
-    setTouched(
+    setTouchedFields(
       Object.keys(validationRules).reduce((acc, field) => {
         acc[field as keyof T] = true;
         return acc;
@@ -536,13 +536,13 @@ export function useFormValidation<T extends Record<string, any>>(
   const reset = () => {
     setValues(initialValues);
     setErrors({});
-    setTouched({});
+    setTouchedFields({});
   };
 
   return {
     values,
     errors,
-    touched,
+    touched: touchedFields,
     setValue,
     setTouched: setFieldTouched,
     validateAll,
