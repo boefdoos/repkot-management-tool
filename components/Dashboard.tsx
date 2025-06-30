@@ -12,12 +12,14 @@ import {
   Thermometer,
   KeyRound,
   CreditCard,
-  Wrench
+  Wrench,
+  BarChart3
 } from 'lucide-react';
 import { BusinessConfig, BusinessCalculator, defaultConfig } from '../lib/config';
 import SubscriptionManager from './SubscriptionManager';
 import BookingManager from './BookingManager';
 import LockerManager from './LockerManager';
+import ReportsManager from './ReportsManager';
 
 interface DashboardProps {
   config?: BusinessConfig;
@@ -753,6 +755,8 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
         return <FinancialDashboard />;
       case 'maintenance':
         return <MaintenancePanel />;
+      case 'reports':
+        return <ReportsManager config={config} />;
       case 'config':
         return <ConfigPanel />;
       default:
@@ -799,6 +803,7 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
               { id: 'climate', label: 'Klimaat', icon: Thermometer },
               { id: 'lockers', label: 'Lockers', icon: Lock },
               { id: 'finance', label: 'Financieel', icon: DollarSign },
+              { id: 'reports', label: 'Rapportage', icon: BarChart3 },
               { id: 'maintenance', label: 'Onderhoud', icon: Wrench },
               { id: 'config', label: 'Configuratie', icon: Settings }
             ].map(({ id, label, icon: Icon }) => (
