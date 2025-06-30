@@ -30,15 +30,63 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeTab, setActiveTab] = useState('dashboard');
   const [calculator] = useState(new BusinessCalculator(config));
+
+  // Climate control state
   const [studioTemperatures, setStudioTemperatures] = useState([21, 19, 22]);
-const [studioStatuses, setStudioStatuses] = useState(['Actief', 'Standby', 'Actief']);
-const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
-const [newMaintenance, setNewMaintenance] = useState({
-  title: '',
-  description: '',
-  priority: 'medium',
-  location: ''
-});
+  const [studioStatuses, setStudioStatuses] = useState(['Actief', 'Standby', 'Actief']);
+
+  // Maintenance state
+  const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
+  const [newMaintenance, setNewMaintenance] = useState({
+    title: '',
+    description: '',
+    priority: 'medium',
+    location: ''
+  });
+  const [maintenanceIssues, setMaintenanceIssues] = useState([
+    {
+      id: 'maint-001',
+      title: 'Studio B - Thermostaat error',
+      description: 'Thermostaat reageert niet op temperatuurwijzigingen',
+      priority: 'high',
+      location: 'studio-b',
+      status: 'open',
+      reportedDate: '2025-06-25',
+      reportedBy: 'Partner 1'
+    },
+    {
+      id: 'maint-002', 
+      title: 'Locker 4 - Slot klemming',
+      description: 'Slot van locker 4 klemt bij openen',
+      priority: 'medium',
+      location: 'lockers',
+      status: 'resolved',
+      reportedDate: '2025-06-22',
+      resolvedDate: '2025-06-22',
+      reportedBy: 'Partner 2'
+    }
+  ]);
+
+  // Access codes state
+  const [activeCodes, setActiveCodes] = useState([
+    { id: 'code-001', code: '4721', customer: 'The Foxes', studio: 'Studio A', timeSlot: '13:00-15:00', validUntil: '2025-07-01' },
+    { id: 'code-002', code: '8394', customer: 'DJ Mike', studio: 'Studio C', timeSlot: '14:00-17:00', validUntil: '2025-07-01' }
+  ]);
+  const [newCodeForm, setNewCodeForm] = useState({
+    customerName: '',
+    dateTime: '',
+    studioId: ''
+  });
+
+  // Simuleer huidige data - later uit Firebase
+  const [currentData] = useState({
+    monthlyRevenue: 2080,
+    occupancyRate: 25,
+    activeLockers: 5,
+    breakEvenPercentage: 149,
+    subscriptionRevenue: 1600,
+    hourlyRevenue: 480
+  });
 const [maintenanceIssues, setMaintenanceIssues] = useState([
   {
     id: 'maint-001',
