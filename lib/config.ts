@@ -1,11 +1,11 @@
-// lib/config.ts - Updated with separate pricing structure
+// lib/config.ts
 export interface StudioConfig {
   id: string;
   name: string;
   size: number; // m²
   hourlyRate: number;
-  dayRate: number;     // Separate pricing for day parts
-  monthlyRate: number; // Separate pricing for monthly subscriptions
+  dayRate: number; // voor 4-uur dagdeel
+  monthlyRate: number; // voor 2 dagdelen per week (32u/maand)
   maxCapacity: number;
 }
 
@@ -52,7 +52,7 @@ export interface BusinessConfig {
   };
 }
 
-// Standaard configuratie gebaseerd op je businessplan
+// Standaard configuratie gebaseerd op je businessplan - aangepast voor 4-uur dagdelen
 export const defaultConfig: BusinessConfig = {
   studios: [
     {
@@ -60,8 +60,8 @@ export const defaultConfig: BusinessConfig = {
       name: 'Studio A',
       size: 20,
       hourlyRate: 10,
-      dayRate: 40,        // €40 per dagdeel (3 uur)
-      monthlyRate: 160,   // €160 per maandabonnement
+      dayRate: 40, // 4 uur × €10
+      monthlyRate: 160, // 2 dagdelen/week × 4 weken × €40
       maxCapacity: 6
     },
     {
@@ -69,8 +69,8 @@ export const defaultConfig: BusinessConfig = {
       name: 'Studio B',
       size: 20,
       hourlyRate: 10,
-      dayRate: 40,
-      monthlyRate: 160,
+      dayRate: 40, // 4 uur × €10
+      monthlyRate: 160, // 2 dagdelen/week × 4 weken × €40
       maxCapacity: 6
     },
     {
@@ -78,8 +78,8 @@ export const defaultConfig: BusinessConfig = {
       name: 'Studio C', 
       size: 15,
       hourlyRate: 8,
-      dayRate: 32,        // €32 per dagdeel
-      monthlyRate: 128,   // €128 per maandabonnement
+      dayRate: 32, // 4 uur × €8
+      monthlyRate: 128, // 2 dagdelen/week × 4 weken × €32
       maxCapacity: 4
     }
   ],
@@ -130,32 +130,23 @@ export class BusinessCalculator {
     return Object.values(this.config.operationalCosts).reduce((sum, cost) => sum + cost, 0);
   }
 
-  // Bereken maximale omzet gebaseerd op realistische scenario's
   getMaxMonthlyRevenue(): number {
-    // Realistische berekening: maandabonnees + losse verhuur + lockers
-    const maxSubscriptionRevenue = this.config.studios.reduce((sum, studio) => {
-      // Assumptie: 4 maandabonnees per studio mogelijk
-      return sum + (studio.monthlyRate * 4);
-    }, 0);
-    
-    // Losse verhuur: gemiddeld 2 dagdelen per week per studio (8 per maand)
-    const casualRevenue = this.config.studios.reduce((sum, studio) => {
-      return sum + (studio.dayRate * 8);
+    const studioRevenue = this.config.studios.reduce((sum, studio) => {
+      // Aanname: 30 dagen * 3 dagdelen per dag (Ochtend, Middag, Avond) = 90 dagdelen/maand
+      // Elke dagdeel is 4 uur, dus 360 uur per maand per studio
+      const maxDagdelen = 30 * 3; // 90 dagdelen per maand
+      return sum + (maxDagdelen * studio.dayRate);
     }, 0);
     
     const lockerRevenue = this.config.lockers.totalCount * this.config.lockers.monthlyRate;
     
-    return maxSubscriptionRevenue + casualRevenue + lockerRevenue;
+    return studioRevenue + lockerRevenue;
   }
 
-  // Bereken break-even bezetting voor maandabonnement model
   calculateBreakEvenOccupancy(): number {
+    const maxRevenue = this.getMaxMonthlyRevenue();
     const requiredRevenue = this.getTotalMonthlyCosts();
-    const maxSubscriptionRevenue = this.config.studios.reduce((sum, studio) => {
-      return sum + (studio.monthlyRate * 4); // 4 abonnees per studio
-    }, 0);
-    
-    return (requiredRevenue / maxSubscriptionRevenue) * 100;
+    return (requiredRevenue / maxRevenue) * 100;
   }
 
   calculateMonthlyProfit(actualRevenue: number): number {
@@ -166,80 +157,54 @@ export class BusinessCalculator {
     return (monthlyProfit * this.config.partners.profitSplitPercentage) / 100 / this.config.partners.count;
   }
 
-  // Scenario berekeningen aangepast voor nieuwe prijsstructuur
-  calculateScenario(subscriptionOccupancy: number, lockerOccupancy: number) {
-    // Bereken subscription revenue (maandabonnees)
-    const maxSubscribers = this.config.studios.length * 4; // 4 per studio
-    const actualSubscribers = Math.round(maxSubscribers * (subscriptionOccupancy / 100));
+  // Scenario berekeningen aangepast voor 4-uur dagdelen
+  calculateScenario(occupancyRate: number, lockerOccupancy: number) {
+    // 3 studios × 30 dagen × 3 dagdelen per dag = 270 totaal dagdelen beschikbaar per maand
+    const totalDagdelenAvailable = this.config.studios.length * 30 * 3;
+    const usedDagdelen = totalDagdelenAvailable * (occupancyRate / 100);
     
-    let subscriptionRevenue = 0;
-    let subscribersLeft = actualSubscribers;
+    let studioRevenue = 0;
+    let remainingDagdelen = usedDagdelen;
     
+    // Verdeel dagdelen over studios (proportioneel naar tarief)
     for (const studio of this.config.studios) {
-      const studioSubscribers = Math.min(subscribersLeft, 4);
-      subscriptionRevenue += studioSubscribers * studio.monthlyRate;
-      subscribersLeft -= studioSubscribers;
+      const studioDagdelen = Math.min(remainingDagdelen, 30 * 3); // max 90 dagdelen per studio
+      studioRevenue += studioDagdelen * studio.dayRate;
+      remainingDagdelen -= studioDagdelen;
     }
 
-    // Losse verhuur (dagdelen) - overige capaciteit
-    const casualRevenue = this.config.studios.reduce((sum, studio) => {
-      const availableDays = Math.max(0, 20 - (Math.min(4, actualSubscribers) * 4)); // 20 dagdelen per maand - bezet door abonnees
-      const casualBookings = Math.round(availableDays * 0.3); // 30% van overige slots wordt losjes geboekt
-      return sum + (casualBookings * studio.dayRate);
-    }, 0);
-
-    // Locker revenue
-    const occupiedLockers = Math.floor(this.config.lockers.totalCount * (lockerOccupancy / 100));
-    const lockerRevenue = occupiedLockers * this.config.lockers.monthlyRate;
+    const lockerRevenue = Math.floor(this.config.lockers.totalCount * (lockerOccupancy / 100)) * this.config.lockers.monthlyRate;
     
-    const totalRevenue = subscriptionRevenue + casualRevenue + lockerRevenue;
+    const totalRevenue = studioRevenue + lockerRevenue;
     const profit = this.calculateMonthlyProfit(totalRevenue);
     const profitPerPartner = this.calculateProfitPerPartner(profit);
 
     return {
       totalRevenue,
-      subscriptionRevenue,
-      casualRevenue,
+      studioRevenue,
       lockerRevenue,
       profit,
       profitPerPartner,
-      occupancyRate: subscriptionOccupancy,
+      occupancyRate,
       lockerOccupancy,
-      subscribers: actualSubscribers
+      dagdelenUsed: Math.round(usedDagdelen),
+      dagdelenAvailable: totalDagdelenAvailable
     };
   }
 
-  // Helper om juiste tarief te krijgen voor boekingstype
-  getStudioRate(studioId: string, bookingType: 'hourly' | 'daily' | 'monthly'): number {
-    const studio = this.config.studios.find(s => s.id === studioId);
-    if (!studio) return 0;
-
-    switch (bookingType) {
-      case 'hourly':
-        return studio.hourlyRate;
-      case 'daily':
-        return studio.dayRate;
-      case 'monthly':
-        return studio.monthlyRate;
-      default:
-        return studio.hourlyRate;
-    }
+  // Hulp functie voor het berekenen van maandelijkse capaciteit
+  getMonthlyCapacity() {
+    return {
+      totalDagdelen: this.config.studios.length * 30 * 3, // 270 dagdelen totaal
+      totalHours: this.config.studios.length * 30 * 3 * 4, // 1080 uur totaal
+      dagdelenPerStudio: 90, // 30 dagen × 3 dagdelen
+      hoursPerStudio: 360, // 90 dagdelen × 4 uur
+      breakEvenDagdelen: Math.ceil(this.getTotalMonthlyCosts() / this.getAverageDayRate())
+    };
   }
 
-  // Bereken prijs voor specifieke boeking
-  calculateBookingPrice(studioId: string, bookingType: 'hourly' | 'daily' | 'monthly', duration: number = 1): number {
-    const studio = this.config.studios.find(s => s.id === studioId);
-    if (!studio) return 0;
-
-    switch (bookingType) {
-      case 'hourly':
-        return studio.hourlyRate * duration;
-      case 'daily':
-        return studio.dayRate * duration; // duration = aantal dagdelen
-      case 'monthly':
-        return studio.monthlyRate; // duration niet relevant voor maandabonnement
-      default:
-        return 0;
-    }
+  private getAverageDayRate(): number {
+    const totalDayRate = this.config.studios.reduce((sum, studio) => sum + studio.dayRate, 0);
+    return totalDayRate / this.config.studios.length;
   }
 }
