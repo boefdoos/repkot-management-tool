@@ -140,16 +140,16 @@ const [maintenanceIssues, setMaintenanceIssues] = useState([
   );
 
   const AccessCodeManager = () => {
-  const [activeCodes, setActiveCodes] = useState([
-    { id: 'code-001', code: '4721', customer: 'The Foxes', studio: 'Studio A', timeSlot: '13:00-15:00', validUntil: '2025-07-01' },
-    { id: 'code-002', code: '8394', customer: 'DJ Mike', studio: 'Studio C', timeSlot: '14:00-17:00', validUntil: '2025-07-01' }
-  ]);
+const [activeCodes, setActiveCodes] = useState([
+  { id: 'code-001', code: '4721', customer: 'The Foxes', studio: 'Studio A', timeSlot: '13:00-15:00', validUntil: '2025-07-01' },
+  { id: 'code-002', code: '8394', customer: 'DJ Mike', studio: 'Studio C', timeSlot: '14:00-17:00', validUntil: '2025-07-01' }
+]);
 
-  const [newCodeForm, setNewCodeForm] = useState({
-    customerName: '',
-    dateTime: '',
-    studioId: ''
-  });
+const [newCodeForm, setNewCodeForm] = useState({
+  customerName: '',
+  dateTime: '',
+  studioId: ''
+});
 
   const generateNewCode = () => {
     if (!newCodeForm.customerName.trim() || !newCodeForm.dateTime || !newCodeForm.studioId) {
