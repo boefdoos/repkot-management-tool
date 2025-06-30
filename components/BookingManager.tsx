@@ -1,6 +1,6 @@
-// components/BookingManager.tsx - Updated with Quick Book feature
+// components/BookingManager.tsx
 import React, { useState } from 'react';
-import { Calendar, Clock, DollarSign, Users, AlertCircle, CheckCircle, Plus, Zap } from 'lucide-react';
+import { Calendar, Clock, DollarSign, Users, AlertCircle, CheckCircle, Plus } from 'lucide-react';
 import { BusinessConfig } from '../lib/config';
 
 interface Booking {
@@ -19,16 +19,6 @@ interface Booking {
   createdAt: string;
 }
 
-interface AvailableSlot {
-  studio: string;
-  studioId: string;
-  day: string;
-  slot: string;
-  date: string;
-  timeSlot: string;
-  available: boolean;
-}
-
 interface BookingManagerProps {
   config: BusinessConfig;
 }
@@ -42,8 +32,8 @@ export default function BookingManager({ config }: BookingManagerProps) {
       studioId: 'studio-b',
       studioName: 'Studio B',
       date: '2025-06-25',
-      timeSlot: 'Middag (14:00-17:00)',
-      duration: 3,
+      timeSlot: 'Middag (14:00-18:00)',
+      duration: 4,
       price: 40,
       status: 'completed',
       bookingType: 'daily',
@@ -57,8 +47,8 @@ export default function BookingManager({ config }: BookingManagerProps) {
       studioId: 'studio-a',
       studioName: 'Studio A',
       date: '2025-06-28',
-      timeSlot: 'Avond (18:00-21:00)',
-      duration: 3,
+      timeSlot: 'Avond (18:00-22:00)',
+      duration: 4,
       price: 40,
       status: 'confirmed',
       bookingType: 'daily',
@@ -71,9 +61,9 @@ export default function BookingManager({ config }: BookingManagerProps) {
       studioId: 'studio-c',
       studioName: 'Studio C',
       date: '2025-07-02',
-      timeSlot: 'Ochtend+Middag (10:00-17:00)',
-      duration: 6,
-      price: 80,
+      timeSlot: 'Ochtend+Middag (10:00-18:00)',
+      duration: 8,
+      price: 64,
       status: 'confirmed',
       bookingType: 'daily',
       notes: '2 dagdelen achter elkaar',
@@ -96,7 +86,6 @@ export default function BookingManager({ config }: BookingManagerProps) {
   ]);
 
   const [showNewForm, setShowNewForm] = useState(false);
-  const [showAllSlots, setShowAllSlots] = useState(false);
   const [newBooking, setNewBooking] = useState({
     customerName: '',
     customerEmail: '',
@@ -104,16 +93,16 @@ export default function BookingManager({ config }: BookingManagerProps) {
     date: '',
     timeSlot: '',
     bookingType: 'daily' as 'hourly' | 'daily',
-    duration: 3,
+    duration: 4,
     notes: ''
   });
 
   const timeSlots = [
-    { id: 'morning', label: 'Ochtend (10:00-13:00)', hours: 3 },
-    { id: 'afternoon', label: 'Middag (14:00-17:00)', hours: 3 },
-    { id: 'evening', label: 'Avond (18:00-21:00)', hours: 3 },
-    { id: 'late', label: 'Late Avond (19:00-22:00)', hours: 3 },
-    { id: 'double', label: 'Dubbel dagdeel (6 uur)', hours: 6 }
+    { id: 'morning', label: 'Ochtend (10:00-14:00)', hours: 4 },
+    { id: 'afternoon', label: 'Middag (14:00-18:00)', hours: 4 },
+    { id: 'evening', label: 'Avond (18:00-22:00)', hours: 4 },
+    { id: 'late', label: 'Late Avond (19:00-23:00)', hours: 4 },
+    { id: 'double', label: 'Dubbel dagdeel (8 uur)', hours: 8 }
   ];
 
   const getStatusColor = (status: string) => {
@@ -143,9 +132,7 @@ export default function BookingManager({ config }: BookingManagerProps) {
     if (newBooking.bookingType === 'hourly') {
       return studio.hourlyRate * newBooking.duration;
     } else {
-      // Voor dagdelen: gebruik dayRate
-      const dagdelen = Math.ceil(newBooking.duration / 3); // 3 uur = 1 dagdeel
-      return studio.dayRate * dagdelen;
+      return studio.dayRate * Math.ceil(newBooking.duration / 4);
     }
   };
 
@@ -170,59 +157,16 @@ export default function BookingManager({ config }: BookingManagerProps) {
     };
   };
 
-  const getAvailableSlots = (): AvailableSlot[] => {
-    // Bereken echte beschikbaarheid gebaseerd op bestaande boekingen
-    const today = new Date();
-    const slots: AvailableSlot[] = [];
-    
-    // Genereer slots voor vandaag + komende 7 dagen
-    for (let i = 0; i <= 7; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      
-      const dayName = date.toLocaleDateString('nl-BE', { weekday: 'long' });
-      const dateStr = date.toISOString().split('T')[0];
-      
-      config.studios.forEach(studio => {
-        timeSlots.slice(0, 4).forEach(timeSlot => { // Exclude double timeslot for availability
-          // Check of dit tijdslot al geboekt is
-          const isBooked = bookings.some(booking => 
-            booking.studioId === studio.id && 
-            booking.date === dateStr && 
-            booking.timeSlot === timeSlot.label &&
-            booking.status !== 'cancelled'
-          );
-          
-          if (!isBooked) {
-            slots.push({
-              studio: studio.name,
-              studioId: studio.id,
-              day: dayName,
-              slot: timeSlot.label.split(' ')[0], // "Ochtend", "Middag", etc.
-              date: dateStr,
-              timeSlot: timeSlot.label,
-              available: true
-            });
-          }
-        });
-      });
-    }
-    
-    return slots.sort((a, b) => a.date.localeCompare(b.date));
-  };
-
-  const quickBookSlot = (slot: AvailableSlot) => {
-    setNewBooking({
-      customerName: '',
-      customerEmail: '',
-      studioId: slot.studioId,
-      date: slot.date,
-      timeSlot: slot.timeSlot,
-      bookingType: 'daily',
-      duration: 3,
-      notes: '' // Laat leeg voor beheerder om in te vullen
-    });
-    setShowNewForm(true);
+  const getAvailableSlots = () => {
+    // Simuleer beschikbare slots - in echte app zou dit uit database komen
+    return [
+      { studio: 'Studio A', day: 'Dinsdag', slot: 'Middag', available: true },
+      { studio: 'Studio A', day: 'Donderdag', slot: 'Ochtend', available: true },
+      { studio: 'Studio B', day: 'Woensdag', slot: 'Ochtend', available: true },
+      { studio: 'Studio B', day: 'Vrijdag', slot: 'Middag', available: true },
+      { studio: 'Studio C', day: 'Maandag', slot: 'Ochtend', available: true },
+      { studio: 'Studio C', day: 'Zaterdag', slot: 'Avond', available: true }
+    ];
   };
 
   const createBooking = () => {
@@ -256,7 +200,7 @@ export default function BookingManager({ config }: BookingManagerProps) {
       date: '',
       timeSlot: '',
       bookingType: 'daily',
-      duration: 3,
+      duration: 4,
       notes: ''
     });
   };
@@ -268,7 +212,6 @@ export default function BookingManager({ config }: BookingManagerProps) {
   };
 
   const monthlyStats = getMonthlyStats();
-  const availableSlots = getAvailableSlots();
 
   return (
     <div className="space-y-6">
@@ -279,7 +222,7 @@ export default function BookingManager({ config }: BookingManagerProps) {
           <div>
             <h4 className="font-semibold text-blue-800">Losse Dagdelen - Aanvullende Inkomsten</h4>
             <p className="text-sm text-blue-700">
-              Maandabonnementen vormen 77% van de studio-omzet. Losse dagdelen vullen resterende tijdsloten op.
+              Maandabonnementen vormen 77% van de studio-omzet. Losse dagdelen (4u) vullen resterende tijdsloten op.
             </p>
           </div>
         </div>
@@ -314,7 +257,7 @@ export default function BookingManager({ config }: BookingManagerProps) {
             <div>
               <p className="text-sm font-medium text-gray-600">Gem. Boeking</p>
               <p className="text-2xl font-bold text-purple-600">€{Math.round(monthlyStats.averageBooking)}</p>
-              <p className="text-sm text-gray-500">Per dagdeel</p>
+              <p className="text-sm text-gray-500">Per dagdeel (4u)</p>
             </div>
             <DollarSign className="w-8 h-8 text-purple-500" />
           </div>
@@ -334,58 +277,20 @@ export default function BookingManager({ config }: BookingManagerProps) {
         </div>
       </div>
 
-      {/* Available Slots Info with Quick Book */}
+      {/* Available Slots Info */}
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Zap className="w-5 h-5 text-green-500" />
-            Beschikbare Tijdsloten - Snel Boeken voor Klanten
-          </h3>
-          <button
-            onClick={() => setShowAllSlots(!showAllSlots)}
-            className="text-blue-600 hover:text-blue-800 text-sm"
-          >
-            {showAllSlots ? 'Toon minder' : `Toon alle ${availableSlots.length} slots`}
-          </button>
-        </div>
-        
-        <p className="text-sm text-gray-600 mb-4">
-          Voor telefonische boekingen of email aanvragen - klik "Boek Nu" om snel een boeking aan te maken.
-        </p>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {(showAllSlots ? availableSlots : availableSlots.slice(0, 6)).map((slot, index) => (
-            <div key={`${slot.studioId}-${slot.date}-${slot.timeSlot}`} className="flex justify-between items-center p-3 border rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-medium text-green-800">{slot.studio}</span>
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                    Vrij
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600">{slot.day}</p>
-                <p className="text-xs text-gray-500">{slot.timeSlot}</p>
-                <p className="text-xs text-gray-400">{new Date(slot.date).toLocaleDateString('nl-BE')}</p>
-              </div>
-              <button 
-                onClick={() => quickBookSlot(slot)}
-                className="btn btn-primary text-xs ml-3"
-                title={`Boek ${slot.studio} - ${slot.day} ${slot.slot}`}
-              >
-                <Zap className="w-3 h-3 mr-1" />
-                Boek Nu
-              </button>
+        <h3 className="text-lg font-semibold mb-4">Beschikbare Tijdsloten Deze Week</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {getAvailableSlots().slice(0, 6).map((slot, index) => (
+            <div key={index} className="flex justify-between items-center p-3 border rounded-lg bg-green-50">
+              <span className="text-sm font-medium">{slot.studio}</span>
+              <span className="text-sm text-gray-600">{slot.day} {slot.slot}</span>
+              <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                Beschikbaar
+              </span>
             </div>
           ))}
         </div>
-        
-        {availableSlots.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-            <p>Alle tijdsloten zijn geboekt deze week</p>
-            <p className="text-sm">Controleer volgende week of voeg nieuwe boekingen handmatig toe</p>
-          </div>
-        )}
       </div>
 
       {/* Action Button */}
@@ -444,7 +349,7 @@ export default function BookingManager({ config }: BookingManagerProps) {
                 <option value="">Selecteer studio</option>
                 {config.studios.map(studio => (
                   <option key={studio.id} value={studio.id}>
-                    {studio.name} ({studio.size}m² - €{studio.hourlyRate}/u, €{studio.dayRate}/dagdeel)
+                    {studio.name} ({studio.size}m² - €{studio.dayRate}/dagdeel)
                   </option>
                 ))}
               </select>
@@ -474,7 +379,7 @@ export default function BookingManager({ config }: BookingManagerProps) {
                   setNewBooking(prev => ({ 
                     ...prev, 
                     timeSlot: e.target.value,
-                    duration: selectedSlot?.hours || 3
+                    duration: selectedSlot?.hours || 4
                   }));
                 }}
                 className="form-input"
@@ -497,7 +402,7 @@ export default function BookingManager({ config }: BookingManagerProps) {
                 onChange={(e) => setNewBooking(prev => ({ ...prev, bookingType: e.target.value as any }))}
                 className="form-input"
               >
-                <option value="daily">Dagdeel (3 uur)</option>
+                <option value="daily">Dagdeel (4 uur)</option>
                 <option value="hourly">Per uur</option>
               </select>
             </div>
@@ -524,10 +429,7 @@ export default function BookingManager({ config }: BookingManagerProps) {
                 <span className="text-xl font-bold text-blue-600">€{calculatePrice()}</span>
               </div>
               <p className="text-sm text-gray-600 mt-1">
-                {newBooking.bookingType === 'hourly' 
-                  ? `${newBooking.duration} uur × €${config.studios.find(s => s.id === newBooking.studioId)?.hourlyRate}/uur`
-                  : `${Math.ceil(newBooking.duration / 3)} dagdeel(en) × €${config.studios.find(s => s.id === newBooking.studioId)?.dayRate}/dagdeel`
-                }
+                {newBooking.duration} uur × €{config.studios.find(s => s.id === newBooking.studioId)?.hourlyRate}/uur
               </p>
             </div>
           )}
