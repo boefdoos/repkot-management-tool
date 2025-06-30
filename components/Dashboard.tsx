@@ -30,6 +30,15 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeTab, setActiveTab] = useState('dashboard');
   const [calculator] = useState(new BusinessCalculator(config));
+  const [studioTemperatures, setStudioTemperatures] = useState([21, 19, 22]);
+const [studioStatuses, setStudioStatuses] = useState(['Actief', 'Standby', 'Actief']);
+const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
+const [newMaintenance, setNewMaintenance] = useState({
+  title: '',
+  description: '',
+  priority: 'medium',
+  location: ''
+});
 
   // Simuleer huidige data - later uit Firebase
   const [currentData] = useState({
