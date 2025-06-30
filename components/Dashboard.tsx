@@ -1069,12 +1069,11 @@ const MaintenancePanel = () => {
     </div>
   );
 
-  const renderTabContent = () => {
+const renderTabContent = () => {
     switch (activeTab) {
       case 'dashboard':
         return (
           <div className="space-y-6">
-            {/* Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <MetricCard
                 title="Maand Omzet"
@@ -1113,7 +1112,6 @@ const MaintenancePanel = () => {
               />
             </div>
 
-            {/* Studio Status */}
             <div className="bg-white p-6 rounded-lg shadow-sm border">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <Users className="w-5 h-5" />
@@ -1142,6 +1140,42 @@ const MaintenancePanel = () => {
                 />
               </div>
             </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="text-blue-800 font-semibold">🎉 REPKOT Beheertool is Live!</h3>
+              <p className="text-blue-700 text-sm mt-1">
+                Alle functionaliteiten zijn toegevoegd: Abonnementenbeheer, Boekingssysteem, Lockerbeheer, Financiële rapportage, Klimaatbeheersing en Toegangscodes.
+              </p>
+            </div>
+          </div>
+        );
+      case 'subscriptions':
+        return <SubscriptionManager config={config} />;
+      case 'bookings':
+        return <BookingManager config={config} />;
+      case 'access':
+        return <AccessCodeManager />;
+      case 'climate':
+        return <ClimateControl />;
+      case 'lockers':
+        return <LockerManager config={config} />;
+      case 'finance':
+        return <FinancialDashboard />;
+      case 'maintenance':
+        return <MaintenancePanel />;
+      case 'reports':
+        return <ReportsManager config={config} />;
+      case 'config':
+        return <ConfigPanel />;
+      default:
+        return (
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <h3 className="text-lg font-semibold mb-4">{activeTab} - In ontwikkeling</h3>
+            <p className="text-gray-600">Deze functionaliteit wordt verder ontwikkeld.</p>
+          </div>
+        );
+    }
+  };
 
             {/* Success Message */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
