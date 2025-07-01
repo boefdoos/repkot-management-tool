@@ -20,8 +20,6 @@ import SubscriptionManager from './SubscriptionManager';
 import BookingManager from './BookingManager';
 import LockerManager from './LockerManager';
 import ReportsManager from './ReportsManager';
-// Verbeterde MaintenancePanel component in Dashboard.tsx
-import React, { useState } from 'react';
 import { Wrench, CheckCircle, AlertCircle, Clock, Plus, X } from 'lucide-react';
 
 interface DashboardProps {
