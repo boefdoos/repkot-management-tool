@@ -582,9 +582,41 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
   );
 
 // Verbeterde MaintenancePanel component in Dashboard.tsx
+import React, { useState } from 'react';
+import { Wrench, CheckCircle, AlertCircle, Clock, Plus, X } from 'lucide-react';
+
+// Type definities
+interface MaintenanceIssue {
+  id: string;
+  title: string;
+  description: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  location: string;
+  category?: string;
+  status: 'open' | 'in-progress' | 'resolved';
+  reportedDate: string;
+  resolvedDate?: string;
+  reportedBy: string;
+}
+
+interface FormData {
+  title: string;
+  description: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  location: string;
+  category: string;
+}
+
+interface FormErrors {
+  title?: string;
+  description?: string;
+  location?: string;
+  category?: string;
+}
+
 const MaintenancePanel = () => {
   // State voor maintenance issues
-  const [maintenanceIssues, setMaintenanceIssues] = useState([
+  const [maintenanceIssues, setMaintenanceIssues] = useState<MaintenanceIssue[]>([
     {
       id: 'maint-001',
       title: 'Studio B - Thermostaat error',
@@ -609,16 +641,16 @@ const MaintenancePanel = () => {
   ]);
 
   // State voor nieuwe melding formulier
-  const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
-  const [formData, setFormData] = useState({
+  const [showMaintenanceForm, setShowMaintenanceForm] = useState<boolean>(false);
+  const [formData, setFormData] = useState<FormData>({
     title: '',
     description: '',
     priority: 'medium',
     location: '',
     category: 'technical'
   });
-  const [formErrors, setFormErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Opties voor dropdowns
   const priorityOptions = [
@@ -652,8 +684,8 @@ const MaintenancePanel = () => {
   ];
 
   // Form validatie
-  const validateForm = () => {
-    const errors = {};
+  const validateForm = (): boolean => {
+    const errors: FormErrors = {};
     
     if (!formData.title.trim()) {
       errors.title = 'Titel is verplicht';
@@ -676,16 +708,16 @@ const MaintenancePanel = () => {
   };
 
   // Form handlers
-  const handleInputChange = (field, value) => {
+  const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
     // Clear error when user starts typing
     if (formErrors[field]) {
-      setFormErrors(prev => ({ ...prev, [field]: '' }));
+      setFormErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
 
-  const resetForm = () => {
+  const resetForm = (): void => {
     setFormData({
       title: '',
       description: '',
@@ -696,7 +728,7 @@ const MaintenancePanel = () => {
     setFormErrors({});
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (): Promise<void> => {
     if (!validateForm()) {
       return;
     }
@@ -707,7 +739,7 @@ const MaintenancePanel = () => {
       // Simuleer API call
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const newIssue = {
+      const newIssue: MaintenanceIssue = {
         id: `maint-${Date.now()}`,
         title: formData.title.trim(),
         description: formData.description.trim(),
@@ -733,7 +765,7 @@ const MaintenancePanel = () => {
     }
   };
 
-  const updateIssueStatus = (issueId, newStatus) => {
+  const updateIssueStatus = (issueId: string, newStatus: MaintenanceIssue['status']): void => {
     setMaintenanceIssues(prev => prev.map(item => 
       item.id === issueId 
         ? { 
@@ -745,18 +777,18 @@ const MaintenancePanel = () => {
     ));
   };
 
-  const deleteIssue = (issueId) => {
+  const deleteIssue = (issueId: string): void => {
     if (confirm('Weet je zeker dat je dit probleem wilt verwijderen?')) {
       setMaintenanceIssues(prev => prev.filter(item => item.id !== issueId));
     }
   };
 
-  const getPriorityColor = (priority) => {
+  const getPriorityColor = (priority: string): string => {
     const option = priorityOptions.find(opt => opt.value === priority);
     return option ? option.color : 'gray';
   };
 
-  const getStatusIcon = (status) => {
+  const getStatusIcon = (status: string): string => {
     switch (status) {
       case 'open': return '🔴';
       case 'in-progress': return '🟡';
@@ -765,12 +797,12 @@ const MaintenancePanel = () => {
     }
   };
 
-  const getLocationLabel = (location) => {
+  const getLocationLabel = (location: string): string => {
     const option = locationOptions.find(opt => opt.value === location);
     return option ? option.label : location;
   };
 
-  const getCategoryLabel = (category) => {
+  const getCategoryLabel = (category: string): string => {
     const option = categoryOptions.find(opt => opt.value === category);
     return option ? option.label : category;
   };
