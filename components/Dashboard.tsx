@@ -777,6 +777,7 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-semibold">🔧 Nieuw Onderhoudsprobleem Melden</h3>
             <button
+              type="button"
               onClick={() => {
                 setShowMaintenanceForm(false);
                 resetMaintenanceForm();
@@ -787,18 +788,26 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
             </button>
           </div>
           
-          <div className="space-y-6">
+          <form onSubmit={(e) => { e.preventDefault(); handleMaintenanceSubmit(); }} className="space-y-6">
             {/* Titel en Locatie */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="maintenance-title" className="block text-sm font-medium text-gray-700 mb-1">
                   Probleem Titel <span className="text-red-500">*</span>
                 </label>
                 <input
+                  id="maintenance-title"
+                  name="title"
                   type="text"
                   value={maintenanceForm.title}
-                  onChange={(e) => handleMaintenanceInputChange('title', e.target.value)}
-                  className={`form-input ${maintenanceErrors.title ? 'border-red-300' : ''}`}
+                  onChange={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleMaintenanceInputChange('title', e.target.value);
+                  }}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    maintenanceErrors.title ? 'border-red-300 focus:ring-red-500' : ''
+                  }`}
                   placeholder="Korte, duidelijke beschrijving van het probleem"
                   maxLength={100}
                 />
@@ -814,13 +823,21 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="maintenance-location" className="block text-sm font-medium text-gray-700 mb-1">
                   Locatie <span className="text-red-500">*</span>
                 </label>
                 <select
+                  id="maintenance-location"
+                  name="location"
                   value={maintenanceForm.location}
-                  onChange={(e) => handleMaintenanceInputChange('location', e.target.value)}
-                  className={`form-input ${maintenanceErrors.location ? 'border-red-300' : ''}`}
+                  onChange={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleMaintenanceInputChange('location', e.target.value);
+                  }}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    maintenanceErrors.location ? 'border-red-300 focus:ring-red-500' : ''
+                  }`}
                 >
                   <option value="">Selecteer locatie waar probleem zich voordoet</option>
                   {locationOptions.map(option => (
@@ -841,13 +858,20 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
             {/* Prioriteit en Categorie */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="maintenance-priority" className="block text-sm font-medium text-gray-700 mb-1">
                   Prioriteitslevel
                 </label>
                 <select
+                  id="maintenance-priority"
+                  name="priority"
                   value={maintenanceForm.priority}
-                  onChange={(e) => handleMaintenanceInputChange('priority', e.target.value as MaintenanceForm['priority'])}
-                  className="form-input"
+                  onChange={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const value = e.target.value as 'low' | 'medium' | 'high' | 'urgent';
+                    handleMaintenanceInputChange('priority', value);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {priorityOptions.map(option => (
                     <option key={option.value} value={option.value}>
@@ -855,16 +879,25 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
                     </option>
                   ))}
                 </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {priorityOptions.find(opt => opt.value === maintenanceForm.priority)?.label}
+                </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="maintenance-category" className="block text-sm font-medium text-gray-700 mb-1">
                   Probleem Categorie
                 </label>
                 <select
+                  id="maintenance-category"
+                  name="category"
                   value={maintenanceForm.category}
-                  onChange={(e) => handleMaintenanceInputChange('category', e.target.value)}
-                  className="form-input"
+                  onChange={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleMaintenanceInputChange('category', e.target.value);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {categoryOptions.map(option => (
                     <option key={option.value} value={option.value}>
@@ -877,15 +910,27 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
 
             {/* Beschrijving */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="maintenance-description" className="block text-sm font-medium text-gray-700 mb-1">
                 Gedetailleerde Beschrijving <span className="text-red-500">*</span>
               </label>
               <textarea
+                id="maintenance-description"
+                name="description"
                 value={maintenanceForm.description}
-                onChange={(e) => handleMaintenanceInputChange('description', e.target.value)}
-                className={`form-input ${maintenanceErrors.description ? 'border-red-300' : ''}`}
+                onChange={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleMaintenanceInputChange('description', e.target.value);
+                }}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  maintenanceErrors.description ? 'border-red-300 focus:ring-red-500' : ''
+                }`}
                 rows={4}
-                placeholder="Beschrijf het probleem in detail..."
+                placeholder="Beschrijf het probleem in detail:
+- Wat is er precies aan de hand?
+- Wanneer treedt het probleem op?
+- Welke impact heeft het op de werking?
+- Zijn er tijdelijke oplossingen mogelijk?"
                 maxLength={500}
               />
               {maintenanceErrors.description && (
@@ -899,13 +944,30 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
               </p>
             </div>
 
+            {/* Preview */}
+            {maintenanceForm.title && maintenanceForm.location && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-800 mb-2">Preview van melding:</h4>
+                <div className="space-y-1 text-sm">
+                  <p><strong>Titel:</strong> {maintenanceForm.title}</p>
+                  <p><strong>Locatie:</strong> {getLocationLabel(maintenanceForm.location)}</p>
+                  <p><strong>Prioriteit:</strong> 
+                    <span className={`ml-1 px-2 py-1 rounded-full text-xs bg-${getPriorityColor(maintenanceForm.priority)}-100 text-${getPriorityColor(maintenanceForm.priority)}-800`}>
+                      {priorityOptions.find(opt => opt.value === maintenanceForm.priority)?.label}
+                    </span>
+                  </p>
+                  <p><strong>Categorie:</strong> {getCategoryLabel(maintenanceForm.category)}</p>
+                  {maintenanceForm.description && <p><strong>Beschrijving:</strong> {maintenanceForm.description}</p>}
+                </div>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4 border-t">
               <button 
-                type="button"
-                onClick={handleMaintenanceSubmit}
+                type="submit"
                 disabled={isSubmittingMaintenance}
-                className="btn btn-primary flex-1"
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isSubmittingMaintenance ? (
                   <>
@@ -925,13 +987,19 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
                   setShowMaintenanceForm(false);
                   resetMaintenanceForm();
                 }}
-                className="btn btn-secondary"
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 flex items-center gap-2"
                 disabled={isSubmittingMaintenance}
               >
                 <X className="w-4 h-4" />
                 Annuleren
               </button>
             </div>
+          </form>
+
+          {/* Debug info voor troubleshooting */}
+          <div className="mt-4 p-3 bg-gray-50 rounded text-xs text-gray-600">
+            <strong>Status:</strong> Titel: "{maintenanceForm.title}" | Locatie: "{maintenanceForm.location}" | 
+            Prioriteit: "{maintenanceForm.priority}" | Categorie: "{maintenanceForm.category}"
           </div>
         </div>
       )}
@@ -975,22 +1043,25 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
                   <div className="ml-4 flex gap-2">
                     {issue.status === 'open' ? (
                       <button
+                        type="button"
                         onClick={() => updateIssueStatus(issue.id, 'resolved')}
-                        className="btn btn-success text-xs"
+                        className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
                       >
                         ✅ Als Opgelost Markeren
                       </button>
                     ) : (
                       <button
+                        type="button"
                         onClick={() => updateIssueStatus(issue.id, 'open')}
-                        className="btn btn-secondary text-xs"
+                        className="px-3 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-700"
                       >
                         🔄 Heropenen
                       </button>
                     )}
                     <button
+                      type="button"
                       onClick={() => deleteIssue(issue.id)}
-                      className="btn text-xs bg-red-600 text-white hover:bg-red-700"
+                      className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
                     >
                       🗑️ Verwijderen
                     </button>
