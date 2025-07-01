@@ -13,14 +13,17 @@ import {
   KeyRound,
   CreditCard,
   Wrench,
-  BarChart3
+  BarChart3,
+  CheckCircle,
+  AlertCircle,
+  Plus,
+  X,
 } from 'lucide-react';
 import { BusinessConfig, BusinessCalculator, defaultConfig } from '../lib/config';
 import SubscriptionManager from './SubscriptionManager';
 import BookingManager from './BookingManager';
 import LockerManager from './LockerManager';
 import ReportsManager from './ReportsManager';
-import { Wrench, CheckCircle, AlertCircle, Clock, Plus, X } from 'lucide-react';
 
 interface DashboardProps {
   config?: BusinessConfig;
