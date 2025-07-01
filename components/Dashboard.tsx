@@ -1,4 +1,4 @@
-// components/Dashboard.tsx - Volledig aangepast voor 4-uur dagdelen
+// components/Dashboard.tsx - Volledig herschreven versie
 import React, { useState, useEffect } from 'react';
 import { 
   TrendingUp, 
@@ -14,36 +14,45 @@ import {
   CreditCard,
   Wrench,
   BarChart3,
-  CheckCircle,
-  AlertCircle,
   Plus,
   X,
+  CheckCircle,
+  AlertCircle,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { BusinessConfig, BusinessCalculator, defaultConfig } from '../lib/config';
-import SubscriptionManager from './SubscriptionManager';
-import BookingManager from './BookingManager';
-import LockerManager from './LockerManager';
-import ReportsManager from './ReportsManager';
 
-interface DashboardProps {
-  config?: BusinessConfig;
-  onConfigChange?: (config: BusinessConfig) => void;
-}
-// Type definities
+// Type definitions
 interface MaintenanceIssue {
   id: string;
   title: string;
   description: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   location: string;
-  category?: string;
+  category: string;
   status: 'open' | 'in-progress' | 'resolved';
   reportedDate: string;
   resolvedDate?: string;
   reportedBy: string;
 }
 
-interface FormData {
+interface AccessCode {
+  id: string;
+  code: string;
+  customer: string;
+  studio: string;
+  timeSlot: string;
+  validUntil: string;
+}
+
+interface NewCodeForm {
+  customerName: string;
+  dateTime: string;
+  studioId: string;
+}
+
+interface MaintenanceForm {
   title: string;
   description: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
@@ -52,51 +61,43 @@ interface FormData {
 }
 
 interface FormErrors {
-  title?: string;
-  description?: string;
-  location?: string;
-  category?: string;
-}
-interface FormData {
-  title: string;
-  description: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  location: string;
-  category: string;
+  [key: string]: string | undefined;
 }
 
-interface FormErrors {
-  title?: string;
-  description?: string;
-  location?: string;
-  category?: string;
+interface DashboardProps {
+  config?: BusinessConfig;
+  onConfigChange?: (config: BusinessConfig) => void;
 }
-
 
 export default function Dashboard({ config = defaultConfig, onConfigChange }: DashboardProps) {
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [calculator] = useState(new BusinessCalculator(config));
 
   // Climate control state
-  const [studioTemperatures, setStudioTemperatures] = useState([21, 19, 22]);
-  const [studioStatuses, setStudioStatuses] = useState(['Actief', 'Standby', 'Actief']);
+  const [studioTemperatures, setStudioTemperatures] = useState<number[]>([21, 19, 22]);
+  const [studioStatuses, setStudioStatuses] = useState<string[]>(['Actief', 'Standby', 'Actief']);
 
   // Maintenance state
-  const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
-  const [newMaintenance, setNewMaintenance] = useState({
+  const [showMaintenanceForm, setShowMaintenanceForm] = useState<boolean>(false);
+  const [maintenanceForm, setMaintenanceForm] = useState<MaintenanceForm>({
     title: '',
     description: '',
     priority: 'medium',
-    location: ''
+    location: '',
+    category: 'technical'
   });
-  const [maintenanceIssues, setMaintenanceIssues] = useState([
+  const [maintenanceErrors, setMaintenanceErrors] = useState<FormErrors>({});
+  const [isSubmittingMaintenance, setIsSubmittingMaintenance] = useState<boolean>(false);
+
+  const [maintenanceIssues, setMaintenanceIssues] = useState<MaintenanceIssue[]>([
     {
       id: 'maint-001',
       title: 'Studio B - Thermostaat error',
       description: 'Thermostaat reageert niet op temperatuurwijzigingen',
       priority: 'high',
       location: 'studio-b',
+      category: 'climate',
       status: 'open',
       reportedDate: '2025-06-25',
       reportedBy: 'Partner 1'
@@ -107,6 +108,7 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
       description: 'Slot van locker 4 klemt bij openen',
       priority: 'medium',
       location: 'lockers',
+      category: 'equipment',
       status: 'resolved',
       reportedDate: '2025-06-22',
       resolvedDate: '2025-06-22',
@@ -115,52 +117,28 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
   ]);
 
   // Access codes state
-  const [activeCodes, setActiveCodes] = useState([
-    { id: 'code-001', code: '4721', customer: 'The Foxes', studio: 'Studio A', timeSlot: '10:00-14:00', validUntil: '2025-07-01' },
-    { id: 'code-002', code: '8394', customer: 'DJ Mike', studio: 'Studio C', timeSlot: '14:00-18:00', validUntil: '2025-07-01' }
+  const [activeCodes, setActiveCodes] = useState<AccessCode[]>([
+    { id: 'code-001', code: '4721', customer: 'The Foxes', studio: 'Studio A', timeSlot: '13:00-15:00', validUntil: '2025-07-01' },
+    { id: 'code-002', code: '8394', customer: 'DJ Mike', studio: 'Studio C', timeSlot: '14:00-17:00', validUntil: '2025-07-01' }
   ]);
-  const [newCodeForm, setNewCodeForm] = useState({
+
+  const [newCodeForm, setNewCodeForm] = useState<NewCodeForm>({
     customerName: '',
     dateTime: '',
     studioId: ''
   });
 
-  // Simuleer huidige data - aangepast voor 4-uur dagdelen
+  const [codeFormErrors, setCodeFormErrors] = useState<FormErrors>({});
+
+  // Simuleer huidige data - later uit Firebase
   const [currentData] = useState({
     monthlyRevenue: 2080,
-    occupancyRate: 25, // Percentage van gebruikte dagdelen
+    occupancyRate: 25,
     activeLockers: 5,
     breakEvenPercentage: 149,
     subscriptionRevenue: 1600,
-    hourlyRevenue: 480,
-    // Nieuwe metrics voor 4-uur dagdelen
-    usedDagdelen: 39, // Gebruikte 4-uur dagdelen deze maand
-    totalDagdelen: 156, // Totaal beschikbare 4-uur dagdelen per maand (3 studios × 52 slots)
-    averageDagdeelPrice: 37 // Gemiddelde prijs per 4-uur dagdeel
+    hourlyRevenue: 480
   });
-
-  // Helper functions
-  const handleFormEvent = (e: any, callback?: any) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (callback) callback(e);
-  };
-
-  const addMaintenanceIssue = (newIssue: any) => {
-    setMaintenanceIssues(prev => [newIssue, ...prev]);
-  };
-
-  const updateIssueStatus = (issueId: string, newStatus: string) => {
-    setMaintenanceIssues(prev => prev.map(item => 
-      item.id === issueId 
-        ? { 
-            ...item, 
-            status: newStatus,
-            resolvedDate: newStatus === 'resolved' ? new Date().toISOString().split('T')[0] : undefined
-          }
-        : item
-    ));
-  };
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -173,6 +151,224 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
     calculator.calculateScenario(90, 95)
   ];
 
+  // Form options
+  const priorityOptions = [
+    { value: 'low', label: 'Laag - Kan wachten', color: 'blue' },
+    { value: 'medium', label: 'Gemiddeld - Binnen week', color: 'yellow' },
+    { value: 'high', label: 'Hoog - Binnen 24u', color: 'orange' },
+    { value: 'urgent', label: 'Urgent - Direct actie', color: 'red' }
+  ];
+
+  const locationOptions = [
+    { value: 'studio-a', label: 'Studio A (20m²)' },
+    { value: 'studio-b', label: 'Studio B (20m²)' },
+    { value: 'studio-c', label: 'Studio C (15m²)' },
+    { value: 'common', label: 'Gemeenschappelijke ruimte' },
+    { value: 'lockers', label: 'Locker gebied' },
+    { value: 'entrance', label: 'Ingang/Toegang' },
+    { value: 'technical', label: 'Technische ruimte' },
+    { value: 'exterior', label: 'Buitenkant gebouw' },
+    { value: 'parking', label: 'Parkeerplaats' }
+  ];
+
+  const categoryOptions = [
+    { value: 'technical', label: 'Technisch (elektra, verwarming, etc.)' },
+    { value: 'acoustic', label: 'Akoestiek (geluidsisolatie, etc.)' },
+    { value: 'security', label: 'Beveiliging (cameras, toegang, etc.)' },
+    { value: 'structural', label: 'Bouw/Structuur (muren, vloeren, etc.)' },
+    { value: 'climate', label: 'Klimaat (ventilatie, temperatuur, etc.)' },
+    { value: 'cleaning', label: 'Reiniging/Hygiëne' },
+    { value: 'equipment', label: 'Apparatuur (lockers, deuren, etc.)' },
+    { value: 'other', label: 'Overig' }
+  ];
+
+  // Form handlers
+  const handleMaintenanceInputChange = (field: keyof MaintenanceForm, value: string) => {
+    setMaintenanceForm(prev => ({ ...prev, [field]: value }));
+    if (maintenanceErrors[field]) {
+      setMaintenanceErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const handleCodeInputChange = (field: keyof NewCodeForm, value: string) => {
+    setNewCodeForm(prev => ({ ...prev, [field]: value }));
+    if (codeFormErrors[field]) {
+      setCodeFormErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const validateMaintenanceForm = (): boolean => {
+    const errors: FormErrors = {};
+    
+    if (!maintenanceForm.title.trim()) {
+      errors.title = 'Titel is verplicht';
+    } else if (maintenanceForm.title.trim().length < 5) {
+      errors.title = 'Titel moet minimaal 5 karakters bevatten';
+    }
+
+    if (!maintenanceForm.location) {
+      errors.location = 'Locatie selectie is verplicht';
+    }
+
+    if (!maintenanceForm.description.trim()) {
+      errors.description = 'Beschrijving is verplicht';
+    } else if (maintenanceForm.description.trim().length < 10) {
+      errors.description = 'Beschrijving moet minimaal 10 karakters bevatten';
+    }
+
+    setMaintenanceErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const validateCodeForm = (): boolean => {
+    const errors: FormErrors = {};
+    
+    if (!newCodeForm.customerName.trim()) {
+      errors.customerName = 'Klant naam is verplicht';
+    }
+
+    if (!newCodeForm.dateTime) {
+      errors.dateTime = 'Datum en tijd zijn verplicht';
+    }
+
+    if (!newCodeForm.studioId) {
+      errors.studioId = 'Studio selectie is verplicht';
+    }
+
+    setCodeFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const resetMaintenanceForm = () => {
+    setMaintenanceForm({
+      title: '',
+      description: '',
+      priority: 'medium',
+      location: '',
+      category: 'technical'
+    });
+    setMaintenanceErrors({});
+  };
+
+  const resetCodeForm = () => {
+    setNewCodeForm({
+      customerName: '',
+      dateTime: '',
+      studioId: ''
+    });
+    setCodeFormErrors({});
+  };
+
+  const handleMaintenanceSubmit = async () => {
+    if (!validateMaintenanceForm()) return;
+
+    setIsSubmittingMaintenance(true);
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const newIssue: MaintenanceIssue = {
+        id: `maint-${Date.now()}`,
+        title: maintenanceForm.title.trim(),
+        description: maintenanceForm.description.trim(),
+        priority: maintenanceForm.priority,
+        location: maintenanceForm.location,
+        category: maintenanceForm.category,
+        status: 'open',
+        reportedDate: new Date().toISOString().split('T')[0],
+        reportedBy: 'Partner Dashboard'
+      };
+
+      setMaintenanceIssues(prev => [newIssue, ...prev]);
+      setShowMaintenanceForm(false);
+      resetMaintenanceForm();
+      alert('✅ Onderhoudsprobleem succesvol gemeld!');
+      
+    } catch (error) {
+      alert('❌ Er ging iets mis. Probeer opnieuw.');
+    } finally {
+      setIsSubmittingMaintenance(false);
+    }
+  };
+
+  const generateNewCode = () => {
+    if (!validateCodeForm()) return;
+
+    const newCode: AccessCode = {
+      id: `code-${Date.now()}`,
+      code: Math.floor(1000 + Math.random() * 9000).toString(),
+      customer: newCodeForm.customerName.trim(),
+      studio: newCodeForm.studioId,
+      timeSlot: 'Nieuwe booking',
+      validUntil: newCodeForm.dateTime.split('T')[0]
+    };
+
+    setActiveCodes(prev => [...prev, newCode]);
+    resetCodeForm();
+    alert(`✅ Nieuwe toegangscode gegenereerd: ${newCode.code}`);
+  };
+
+  const deactivateCode = (codeId: string) => {
+    setActiveCodes(prev => prev.filter(code => code.id !== codeId));
+    alert('Code gedeactiveerd');
+  };
+
+  const updateIssueStatus = (issueId: string, newStatus: MaintenanceIssue['status']) => {
+    setMaintenanceIssues(prev => prev.map(item => 
+      item.id === issueId 
+        ? { 
+            ...item, 
+            status: newStatus,
+            resolvedDate: newStatus === 'resolved' ? new Date().toISOString().split('T')[0] : undefined
+          }
+        : item
+    ));
+  };
+
+  const deleteIssue = (issueId: string) => {
+    if (confirm('Weet je zeker dat je dit probleem wilt verwijderen?')) {
+      setMaintenanceIssues(prev => prev.filter(item => item.id !== issueId));
+    }
+  };
+
+  const updateTemperature = (index: number, value: number) => {
+    const newTemps = [...studioTemperatures];
+    newTemps[index] = value;
+    setStudioTemperatures(newTemps);
+  };
+
+  const updateStudioStatus = (index: number, status: string) => {
+    const newStatuses = [...studioStatuses];
+    newStatuses[index] = status;
+    setStudioStatuses(newStatuses);
+  };
+
+  // Helper functions
+  const getPriorityColor = (priority: string): string => {
+    const option = priorityOptions.find(opt => opt.value === priority);
+    return option ? option.color : 'gray';
+  };
+
+  const getStatusIcon = (status: string): string => {
+    switch (status) {
+      case 'open': return '🔴';
+      case 'in-progress': return '🟡';
+      case 'resolved': return '✅';
+      default: return '⚪';
+    }
+  };
+
+  const getLocationLabel = (location: string): string => {
+    const option = locationOptions.find(opt => opt.value === location);
+    return option ? option.label : location;
+  };
+
+  const getCategoryLabel = (category: string): string => {
+    const option = categoryOptions.find(opt => opt.value === category);
+    return option ? option.label : category;
+  };
+
+  // Components
   const MetricCard = ({ 
     title, 
     value, 
@@ -214,7 +410,7 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
           {isOccupied ? 'Bezet' : 'Vrij'}
         </span>
       </div>
-      <p className="text-sm text-gray-600">{studio.size}m² • €{studio.dayRate}/dagdeel (4u)</p>
+      <p className="text-sm text-gray-600">{studio.size}m² • €{studio.hourlyRate}/uur</p>
       {currentUser && (
         <p className="text-sm font-medium text-blue-600 mt-1">👥 {currentUser}</p>
       )}
@@ -228,177 +424,143 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
     </div>
   );
 
-  const AccessCodeManager = () => {
-    const generateNewCode = () => {
-      if (!newCodeForm.customerName.trim() || !newCodeForm.dateTime || !newCodeForm.studioId) {
-        alert('Vul alle velden in om een code te genereren.');
-        return;
-      }
-
-      const newCode = {
-        id: `code-${Date.now()}`,
-        code: Math.floor(1000 + Math.random() * 9000).toString(),
-        customer: newCodeForm.customerName.trim(),
-        studio: newCodeForm.studioId,
-        timeSlot: 'Nieuwe booking',
-        validUntil: newCodeForm.dateTime.split('T')[0]
-      };
-
-      setActiveCodes(prev => [...prev, newCode]);
-      setNewCodeForm({ customerName: '', dateTime: '', studioId: '' });
-      alert(`✅ Nieuwe toegangscode gegenereerd: ${newCode.code}`);
-    };
-
-    const deactivateCode = (codeId: string) => {
-      setActiveCodes(prev => prev.filter(code => code.id !== codeId));
-      alert('Code gedeactiveerd');
-    };
-
-    return (
-      <div className="space-y-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <KeyRound className="w-5 h-5" />
-            Toegangscodes Beheer
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-semibold mb-3">Actieve Codes</h4>
-              <div className="space-y-3">
-                {activeCodes.map(codeData => (
-                  <div key={codeData.id} className="flex justify-between items-center p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium">{codeData.customer}</p>
-                      <p className="text-sm text-gray-500">{codeData.timeSlot} - {codeData.studio}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-mono text-lg font-bold">{codeData.code}</p>
-                      <button 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          deactivateCode(codeData.id);
-                        }}
-                        className="text-red-600 text-sm hover:underline"
-                      >
-                        Deactiveer
-                      </button>
-                    </div>
+  const AccessCodeManager = () => (
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <KeyRound className="w-5 h-5" />
+          Toegangscodes Beheer
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="font-semibold mb-3">Actieve Codes</h4>
+            <div className="space-y-3">
+              {activeCodes.map(codeData => (
+                <div key={codeData.id} className="flex justify-between items-center p-3 border rounded-lg">
+                  <div>
+                    <p className="font-medium">{codeData.customer}</p>
+                    <p className="text-sm text-gray-500">{codeData.timeSlot} - {codeData.studio}</p>
                   </div>
-                ))}
-              </div>
+                  <div className="text-right">
+                    <p className="font-mono text-lg font-bold">{codeData.code}</p>
+                    <button 
+                      onClick={() => deactivateCode(codeData.id)}
+                      className="text-red-600 text-sm hover:underline"
+                    >
+                      Deactiveer
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-            
-            <div>
-              <h4 className="font-semibold mb-3">Nieuwe Code Genereren</h4>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Klant naam</label>
-                  <input 
-                    type="text"
-                    value={newCodeForm.customerName}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      setNewCodeForm(prev => ({ ...prev, customerName: e.target.value }));
-                    }}
-                    onFocus={(e) => e.stopPropagation()}
-                    onClick={(e) => e.stopPropagation()}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Naam van de klant"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Datum en tijd</label>
-                  <input 
-                    type="datetime-local"
-                    value={newCodeForm.dateTime}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      setNewCodeForm(prev => ({ ...prev, dateTime: e.target.value }));
-                    }}
-                    onFocus={(e) => e.stopPropagation()}
-                    onClick={(e) => e.stopPropagation()}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Studio</label>
-                  <select 
-                    value={newCodeForm.studioId}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      setNewCodeForm(prev => ({ ...prev, studioId: e.target.value }));
-                    }}
-                    onFocus={(e) => e.stopPropagation()}
-                    onClick={(e) => e.stopPropagation()}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Selecteer studio</option>
-                    <option value="Studio A">Studio A</option>
-                    <option value="Studio B">Studio B</option>
-                    <option value="Studio C">Studio C</option>
-                    <option value="Alle Studios">Alle Studios</option>
-                  </select>
-                </div>
-
-                <button 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    generateNewCode();
-                  }}
-                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  Genereer Code
-                </button>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold mb-3">Nieuwe Code Genereren</h4>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Klant naam <span className="text-red-500">*</span>
+                </label>
+                <input 
+                  type="text"
+                  value={newCodeForm.customerName}
+                  onChange={(e) => handleCodeInputChange('customerName', e.target.value)}
+                  className={`form-input ${codeFormErrors.customerName ? 'border-red-300' : ''}`}
+                  placeholder="Naam van de klant"
+                />
+                {codeFormErrors.customerName && (
+                  <p className="text-red-600 text-xs mt-1">{codeFormErrors.customerName}</p>
+                )}
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Datum en tijd <span className="text-red-500">*</span>
+                </label>
+                <input 
+                  type="datetime-local"
+                  value={newCodeForm.dateTime}
+                  onChange={(e) => handleCodeInputChange('dateTime', e.target.value)}
+                  className={`form-input ${codeFormErrors.dateTime ? 'border-red-300' : ''}`}
+                />
+                {codeFormErrors.dateTime && (
+                  <p className="text-red-600 text-xs mt-1">{codeFormErrors.dateTime}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Studio <span className="text-red-500">*</span>
+                </label>
+                <select 
+                  value={newCodeForm.studioId}
+                  onChange={(e) => handleCodeInputChange('studioId', e.target.value)}
+                  className={`form-input ${codeFormErrors.studioId ? 'border-red-300' : ''}`}
+                >
+                  <option value="">Selecteer studio</option>
+                  <option value="Studio A">Studio A</option>
+                  <option value="Studio B">Studio B</option>
+                  <option value="Studio C">Studio C</option>
+                  <option value="Alle Studios">Alle Studios</option>
+                </select>
+                {codeFormErrors.studioId && (
+                  <p className="text-red-600 text-xs mt-1">{codeFormErrors.studioId}</p>
+                )}
+              </div>
+
+              <button 
+                onClick={generateNewCode}
+                className="w-full btn btn-primary"
+              >
+                <Plus className="w-4 h-4" />
+                Genereer Code
+              </button>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Security Status */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <h3 className="text-lg font-semibold mb-4">Beveiligingsstatus</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-semibold mb-3">Camera Status</h4>
-              <div className="space-y-2">
-                {['Ingang', 'Gemeenschappelijke ruimte', 'Gang'].map((location, index) => (
-                  <div key={index} className="flex justify-between items-center">
-                    <span className="text-sm">{location}</span>
-                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                      Online
-                    </span>
-                  </div>
-                ))}
-              </div>
+      {/* Security Status */}
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <h3 className="text-lg font-semibold mb-4">Beveiligingsstatus</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="font-semibold mb-3">Camera Status</h4>
+            <div className="space-y-2">
+              {['Ingang', 'Gemeenschappelijke ruimte', 'Gang'].map((location, index) => (
+                <div key={index} className="flex justify-between items-center">
+                  <span className="text-sm">{location}</span>
+                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                    Online
+                  </span>
+                </div>
+              ))}
             </div>
-            
-            <div>
-              <h4 className="font-semibold mb-3">Recente Activiteit</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>13:45 - Toegang Studio A</span>
-                  <span className="text-green-600">✓</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>14:02 - Toegang Studio C</span>
-                  <span className="text-green-600">✓</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>12:30 - Ongeautoriseerde poging</span>
-                  <span className="text-red-600">⚠</span>
-                </div>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold mb-3">Recente Activiteit</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>13:45 - Toegang Studio A</span>
+                <span className="text-green-600">✓</span>
+              </div>
+              <div className="flex justify-between">
+                <span>14:02 - Toegang Studio C</span>
+                <span className="text-green-600">✓</span>
+              </div>
+              <div className="flex justify-between">
+                <span>12:30 - Ongeautoriseerde poging</span>
+                <span className="text-red-600">⚠</span>
               </div>
             </div>
           </div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
 
   const ClimateControl = () => (
     <div className="space-y-6">
@@ -429,11 +591,7 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
                       min="16" 
                       max="25" 
                       value={studioTemperatures[index]}
-                      onChange={(e) => {
-                        const newTemps = [...studioTemperatures];
-                        newTemps[index] = parseInt(e.target.value);
-                        setStudioTemperatures(newTemps);
-                      }}
+                      onChange={(e) => updateTemperature(index, parseInt(e.target.value))}
                       className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                     />
                     <span className="font-mono text-lg w-12">{studioTemperatures[index]}°C</span>
@@ -442,11 +600,7 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
                 
                 <div className="grid grid-cols-2 gap-2">
                   <button 
-                    onClick={() => {
-                      const newStatuses = [...studioStatuses];
-                      newStatuses[index] = newStatuses[index] === 'Verwarming' ? 'Actief' : 'Verwarming';
-                      setStudioStatuses(newStatuses);
-                    }}
+                    onClick={() => updateStudioStatus(index, studioStatuses[index] === 'Verwarming' ? 'Actief' : 'Verwarming')}
                     className={`btn text-sm ${
                       studioStatuses[index] === 'Verwarming' ? 'btn-primary' : 'btn-secondary'
                     }`}
@@ -454,11 +608,7 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
                     Verwarming
                   </button>
                   <button 
-                    onClick={() => {
-                      const newStatuses = [...studioStatuses];
-                      newStatuses[index] = newStatuses[index] === 'Koeling' ? 'Actief' : 'Koeling';
-                      setStudioStatuses(newStatuses);
-                    }}
+                    onClick={() => updateStudioStatus(index, studioStatuses[index] === 'Koeling' ? 'Actief' : 'Koeling')}
                     className={`btn text-sm ${
                       studioStatuses[index] === 'Koeling' ? 'btn-primary' : 'btn-secondary'
                     }`}
@@ -516,366 +666,40 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
     </div>
   );
 
-  const FinancialDashboard = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <MetricCard
-          title="Totale Omzet"
-          value={`€${currentData.monthlyRevenue}`}
-          subtitle={`+${Math.round(((currentData.monthlyRevenue / config.breakEven.targetMonthlyRevenue) - 1) * 100)}% vs target`}
-          icon={DollarSign}
-          color="green"
-        />
-        <MetricCard
-          title="Abonnement Omzet"
-          value={`€${currentData.subscriptionRevenue}`}
-          subtitle={`${Math.round((currentData.subscriptionRevenue / currentData.monthlyRevenue) * 100)}% van totaal`}
-          icon={CreditCard}
-          color="blue"
-        />
-        <MetricCard
-          title="Losse Verhuur"
-          value={`€${currentData.hourlyRevenue}`}
-          subtitle={`${Math.round((currentData.hourlyRevenue / currentData.monthlyRevenue) * 100)}% van totaal`}
-          icon={Clock}
-          color="purple"
-        />
-        <MetricCard
-          title="Locker Omzet"
-          value={`€${currentData.activeLockers * config.lockers.monthlyRate}`}
-          subtitle={`${Math.round(((currentData.activeLockers * config.lockers.monthlyRate) / currentData.monthlyRevenue) * 100)}% van totaal`}
-          icon={Lock}
-          color="orange"
-        />
-      </div>
-
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold mb-4">Financiële Details</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h4 className="font-semibold mb-3">Omzet Breakdown</h4>
-            <div className="space-y-2">
-              {config.studios.map((studio, index) => {
-                const revenues = [820, 720, 600];
-                return (
-                  <div key={studio.id} className="flex justify-between items-center p-2 border rounded">
-                    <span>{studio.name} ({studio.size}m²)</span>
-                    <span className="font-semibold">€{revenues[index]}</span>
-                  </div>
-                );
-              })}
-              <div className="flex justify-between items-center p-2 border rounded font-semibold bg-blue-50">
-                <span>Totaal Studios</span>
-                <span>€{1540}</span>
-              </div>
-            </div>
-          </div>
-          
-          <div>
-            <h4 className="font-semibold mb-3">Kostenstructuur</h4>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center p-2 border rounded">
-                <span>Operationele kosten</span>
-                <span className="font-semibold">€{calculator.getTotalMonthlyCosts()}</span>
-              </div>
-              <div className="flex justify-between items-center p-2 border rounded">
-                <span>Netto winst</span>
-                <span className={`font-semibold ${
-                  currentData.monthlyRevenue - calculator.getTotalMonthlyCosts() > 0 
-                    ? 'text-green-600' 
-                    : 'text-red-600'
-                }`}>
-                  €{currentData.monthlyRevenue - calculator.getTotalMonthlyCosts()}
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-2 border rounded bg-green-50">
-                <span>Per partner</span>
-                <span className="font-semibold text-green-600">
-                  €{Math.round((currentData.monthlyRevenue - calculator.getTotalMonthlyCosts()) / 2)}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold mb-4">Scenario Analyse</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {scenarios.map((scenario, index) => (
-            <div key={index} className="p-4 border rounded-lg">
-              <h4 className="font-medium mb-2">{scenario.occupancyRate}% Bezetting</h4>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span>Omzet:</span>
-                  <span className="font-medium">€{Math.round(scenario.totalRevenue)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Winst:</span>
-                  <span className={`font-medium ${scenario.profit > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    €{Math.round(scenario.profit)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Per partner:</span>
-                  <span className="font-medium">€{Math.round(scenario.profitPerPartner)}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-const MaintenancePanel = () => {
-  // State voor maintenance issues
-  const [maintenanceIssues, setMaintenanceIssues] = useState<MaintenanceIssue[]>([
-    {
-      id: 'maint-001',
-      title: 'Studio B - Thermostaat error',
-      description: 'Thermostaat reageert niet op temperatuurwijzigingen',
-      priority: 'high',
-      location: 'studio-b',
-      status: 'open',
-      reportedDate: '2025-06-25',
-      reportedBy: 'Partner 1'
-    },
-    {
-      id: 'maint-002', 
-      title: 'Locker 4 - Slot klemming',
-      description: 'Slot van locker 4 klemt bij openen',
-      priority: 'medium',
-      location: 'lockers',
-      status: 'resolved',
-      reportedDate: '2025-06-22',
-      resolvedDate: '2025-06-22',
-      reportedBy: 'Partner 2'
-    }
-  ]);
-
-  // State voor nieuwe melding formulier
-  const [showMaintenanceForm, setShowMaintenanceForm] = useState<boolean>(false);
-  const [formData, setFormData] = useState<FormData>({
-    title: '',
-    description: '',
-    priority: 'medium',
-    location: '',
-    category: 'technical'
-  });
-  const [formErrors, setFormErrors] = useState<FormErrors>({});
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-
-  // Opties voor dropdowns
-  const priorityOptions = [
-    { value: 'low', label: 'Laag - Kan wachten', color: 'blue' },
-    { value: 'medium', label: 'Gemiddeld - Binnen week', color: 'yellow' },
-    { value: 'high', label: 'Hoog - Binnen 24u', color: 'orange' },
-    { value: 'urgent', label: 'Urgent - Direct actie', color: 'red' }
-  ];
-
-  const locationOptions = [
-    { value: 'studio-a', label: 'Studio A (20m²)' },
-    { value: 'studio-b', label: 'Studio B (20m²)' },
-    { value: 'studio-c', label: 'Studio C (15m²)' },
-    { value: 'common', label: 'Gemeenschappelijke ruimte' },
-    { value: 'lockers', label: 'Locker gebied' },
-    { value: 'entrance', label: 'Ingang/Toegang' },
-    { value: 'technical', label: 'Technische ruimte' },
-    { value: 'exterior', label: 'Buitenkant gebouw' },
-    { value: 'parking', label: 'Parkeerplaats' }
-  ];
-
-  const categoryOptions = [
-    { value: 'technical', label: 'Technisch (elektra, verwarming, etc.)' },
-    { value: 'acoustic', label: 'Akoestiek (geluidsisolatie, etc.)' },
-    { value: 'security', label: 'Beveiliging (cameras, toegang, etc.)' },
-    { value: 'structural', label: 'Bouw/Structuur (muren, vloeren, etc.)' },
-    { value: 'climate', label: 'Klimaat (ventilatie, temperatuur, etc.)' },
-    { value: 'cleaning', label: 'Reiniging/Hygiëne' },
-    { value: 'equipment', label: 'Apparatuur (lockers, deuren, etc.)' },
-    { value: 'other', label: 'Overig' }
-  ];
-
-  // Form validatie
-  const validateForm = (): boolean => {
-    const errors: FormErrors = {};
-    
-    if (!formData.title.trim()) {
-      errors.title = 'Titel is verplicht';
-    } else if (formData.title.trim().length < 5) {
-      errors.title = 'Titel moet minimaal 5 karakters bevatten';
-    }
-
-    if (!formData.location) {
-      errors.location = 'Locatie selectie is verplicht';
-    }
-
-    if (!formData.description.trim()) {
-      errors.description = 'Beschrijving is verplicht';
-    } else if (formData.description.trim().length < 10) {
-      errors.description = 'Beschrijving moet minimaal 10 karakters bevatten';
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  // Form handlers
-  const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Clear error when user starts typing
-    if (formErrors[field]) {
-      setFormErrors(prev => ({ ...prev, [field]: undefined }));
-    }
-  };
-
-  const resetForm = (): void => {
-    setFormData({
-      title: '',
-      description: '',
-      priority: 'medium',
-      location: '',
-      category: 'technical'
-    });
-    setFormErrors({});
-  };
-
-  const handleSubmit = async (): Promise<void> => {
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      // Simuleer API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const newIssue: MaintenanceIssue = {
-        id: `maint-${Date.now()}`,
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        priority: formData.priority,
-        location: formData.location,
-        category: formData.category,
-        status: 'open',
-        reportedDate: new Date().toISOString().split('T')[0],
-        reportedBy: 'Partner Dashboard'
-      };
-
-      setMaintenanceIssues(prev => [newIssue, ...prev]);
-      setShowMaintenanceForm(false);
-      resetForm();
-
-      // Success feedback
-      alert('✅ Onderhoudsprobleem succesvol gemeld!');
-      
-    } catch (error) {
-      alert('❌ Er ging iets mis bij het melden. Probeer opnieuw.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const updateIssueStatus = (issueId: string, newStatus: MaintenanceIssue['status']): void => {
-    setMaintenanceIssues(prev => prev.map(item => 
-      item.id === issueId 
-        ? { 
-            ...item, 
-            status: newStatus,
-            resolvedDate: newStatus === 'resolved' ? new Date().toISOString().split('T')[0] : undefined
-          }
-        : item
-    ));
-  };
-
-  const deleteIssue = (issueId: string): void => {
-    if (confirm('Weet je zeker dat je dit probleem wilt verwijderen?')) {
-      setMaintenanceIssues(prev => prev.filter(item => item.id !== issueId));
-    }
-  };
-
-  const getPriorityColor = (priority: string): string => {
-    const option = priorityOptions.find(opt => opt.value === priority);
-    return option ? option.color : 'gray';
-  };
-
-  const getStatusIcon = (status: string): string => {
-    switch (status) {
-      case 'open': return '🔴';
-      case 'in-progress': return '🟡';
-      case 'resolved': return '✅';
-      default: return '⚪';
-    }
-  };
-
-  const getLocationLabel = (location: string): string => {
-    const option = locationOptions.find(opt => opt.value === location);
-    return option ? option.label : location;
-  };
-
-  const getCategoryLabel = (category: string): string => {
-    const option = categoryOptions.find(opt => opt.value === category);
-    return option ? option.label : category;
-  };
-
-  return (
+  const MaintenancePanel = () => (
     <div className="space-y-6">
       {/* Header met statistieken */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Open Problemen</p>
-              <p className="text-2xl font-bold text-red-600">
-                {maintenanceIssues.filter(issue => issue.status === 'open').length}
-              </p>
-              <p className="text-sm text-gray-500">Actie vereist</p>
-            </div>
-            <Wrench className="w-8 h-8 text-red-500" />
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Opgelost Deze Maand</p>
-              <p className="text-2xl font-bold text-green-600">
-                {maintenanceIssues.filter(issue => issue.status === 'resolved').length}
-              </p>
-              <p className="text-sm text-gray-500">Afgehandeld</p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-green-500" />
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Urgente Issues</p>
-              <p className="text-2xl font-bold text-orange-600">
-                {maintenanceIssues.filter(issue => 
-                  ['urgent', 'high'].includes(issue.priority) && issue.status === 'open'
-                ).length}
-              </p>
-              <p className="text-sm text-gray-500">Hoge prioriteit</p>
-            </div>
-            <AlertCircle className="w-8 h-8 text-orange-500" />
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Gem. Oplostijd</p>
-              <p className="text-2xl font-bold text-blue-600">2.3</p>
-              <p className="text-sm text-gray-500">Dagen</p>
-            </div>
-            <Clock className="w-8 h-8 text-blue-500" />
-          </div>
-        </div>
+        <MetricCard
+          title="Open Problemen"
+          value={maintenanceIssues.filter(issue => issue.status === 'open').length.toString()}
+          subtitle="Actie vereist"
+          icon={Wrench}
+          color="red"
+        />
+        <MetricCard
+          title="Opgelost Deze Maand"
+          value={maintenanceIssues.filter(issue => issue.status === 'resolved').length.toString()}
+          subtitle="Afgehandeld"
+          icon={CheckCircle}
+          color="green"
+        />
+        <MetricCard
+          title="Urgente Issues"
+          value={maintenanceIssues.filter(issue => 
+            ['urgent', 'high'].includes(issue.priority) && issue.status === 'open'
+          ).length.toString()}
+          subtitle="Hoge prioriteit"
+          icon={AlertCircle}
+          color="orange"
+        />
+        <MetricCard
+          title="Gem. Oplostijd"
+          value="2.3"
+          subtitle="Dagen"
+          icon={Clock}
+          color="blue"
+        />
       </div>
 
       {/* Quick Actions */}
@@ -951,7 +775,7 @@ const MaintenancePanel = () => {
             <button
               onClick={() => {
                 setShowMaintenanceForm(false);
-                resetForm();
+                resetMaintenanceForm();
               }}
               className="text-gray-400 hover:text-gray-600"
             >
@@ -968,20 +792,20 @@ const MaintenancePanel = () => {
                 </label>
                 <input
                   type="text"
-                  value={formData.title}
-                  onChange={(e) => handleInputChange('title', e.target.value)}
-                  className={`form-input ${formErrors.title ? 'border-red-300' : ''}`}
+                  value={maintenanceForm.title}
+                  onChange={(e) => handleMaintenanceInputChange('title', e.target.value)}
+                  className={`form-input ${maintenanceErrors.title ? 'border-red-300' : ''}`}
                   placeholder="Korte, duidelijke beschrijving van het probleem"
                   maxLength={100}
                 />
-                {formErrors.title && (
+                {maintenanceErrors.title && (
                   <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />
-                    {formErrors.title}
+                    {maintenanceErrors.title}
                   </p>
                 )}
                 <p className="text-xs text-gray-500 mt-1">
-                  {formData.title.length}/100 karakters
+                  {maintenanceForm.title.length}/100 karakters
                 </p>
               </div>
 
@@ -990,9 +814,9 @@ const MaintenancePanel = () => {
                   Locatie <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={formData.location}
-                  onChange={(e) => handleInputChange('location', e.target.value)}
-                  className={`form-input ${formErrors.location ? 'border-red-300' : ''}`}
+                  value={maintenanceForm.location}
+                  onChange={(e) => handleMaintenanceInputChange('location', e.target.value)}
+                  className={`form-input ${maintenanceErrors.location ? 'border-red-300' : ''}`}
                 >
                   <option value="">Selecteer locatie waar probleem zich voordoet</option>
                   {locationOptions.map(option => (
@@ -1001,10 +825,10 @@ const MaintenancePanel = () => {
                     </option>
                   ))}
                 </select>
-                {formErrors.location && (
+                {maintenanceErrors.location && (
                   <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />
-                    {formErrors.location}
+                    {maintenanceErrors.location}
                   </p>
                 )}
               </div>
@@ -1017,8 +841,8 @@ const MaintenancePanel = () => {
                   Prioriteitslevel
                 </label>
                 <select
-                  value={formData.priority}
-                  onChange={(e) => handleInputChange('priority', e.target.value)}
+                  value={maintenanceForm.priority}
+                  onChange={(e) => handleMaintenanceInputChange('priority', e.target.value as MaintenanceForm['priority'])}
                   className="form-input"
                 >
                   {priorityOptions.map(option => (
@@ -1027,9 +851,6 @@ const MaintenancePanel = () => {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  {priorityOptions.find(opt => opt.value === formData.priority)?.label}
-                </p>
               </div>
 
               <div>
@@ -1037,8 +858,8 @@ const MaintenancePanel = () => {
                   Probleem Categorie
                 </label>
                 <select
-                  value={formData.category}
-                  onChange={(e) => handleInputChange('category', e.target.value)}
+                  value={maintenanceForm.category}
+                  onChange={(e) => handleMaintenanceInputChange('category', e.target.value)}
                   className="form-input"
                 >
                   {categoryOptions.map(option => (
@@ -1056,51 +877,33 @@ const MaintenancePanel = () => {
                 Gedetailleerde Beschrijving <span className="text-red-500">*</span>
               </label>
               <textarea
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                className={`form-input ${formErrors.description ? 'border-red-300' : ''}`}
+                value={maintenanceForm.description}
+                onChange={(e) => handleMaintenanceInputChange('description', e.target.value)}
+                className={`form-input ${maintenanceErrors.description ? 'border-red-300' : ''}`}
                 rows={4}
-                placeholder="Beschrijf het probleem in detail:&#10;- Wat is er precies aan de hand?&#10;- Wanneer treedt het probleem op?&#10;- Welke impact heeft het op de werking?&#10;- Zijn er tijdelijke oplossingen mogelijk?"
+                placeholder="Beschrijf het probleem in detail..."
                 maxLength={500}
               />
-              {formErrors.description && (
+              {maintenanceErrors.description && (
                 <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" />
-                  {formErrors.description}
+                  {maintenanceErrors.description}
                 </p>
               )}
               <p className="text-xs text-gray-500 mt-1">
-                {formData.description.length}/500 karakters
+                {maintenanceForm.description.length}/500 karakters
               </p>
             </div>
-
-            {/* Preview */}
-            {formData.title && formData.location && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-semibold text-blue-800 mb-2">Preview van melding:</h4>
-                <div className="space-y-1 text-sm">
-                  <p><strong>Titel:</strong> {formData.title}</p>
-                  <p><strong>Locatie:</strong> {getLocationLabel(formData.location)}</p>
-                  <p><strong>Prioriteit:</strong> 
-                    <span className={`ml-1 px-2 py-1 rounded-full text-xs bg-${getPriorityColor(formData.priority)}-100 text-${getPriorityColor(formData.priority)}-800`}>
-                      {priorityOptions.find(opt => opt.value === formData.priority)?.label}
-                    </span>
-                  </p>
-                  <p><strong>Categorie:</strong> {getCategoryLabel(formData.category)}</p>
-                  {formData.description && <p><strong>Beschrijving:</strong> {formData.description}</p>}
-                </div>
-              </div>
-            )}
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4 border-t">
               <button 
                 type="button"
-                onClick={handleSubmit}
-                disabled={isSubmitting}
+                onClick={handleMaintenanceSubmit}
+                disabled={isSubmittingMaintenance}
                 className="btn btn-primary flex-1"
               >
-                {isSubmitting ? (
+                {isSubmittingMaintenance ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                     Melden...
@@ -1116,10 +919,10 @@ const MaintenancePanel = () => {
                 type="button"
                 onClick={() => {
                   setShowMaintenanceForm(false);
-                  resetForm();
+                  resetMaintenanceForm();
                 }}
                 className="btn btn-secondary"
-                disabled={isSubmitting}
+                disabled={isSubmittingMaintenance}
               >
                 <X className="w-4 h-4" />
                 Annuleren
@@ -1195,7 +998,7 @@ const MaintenancePanel = () => {
         )}
       </div>
 
-      {/* Emergency Contacts - Ongewijzigd */}
+      {/* Emergency Contacts */}
       <div className="bg-white p-6 rounded-lg shadow-sm border">
         <h3 className="text-lg font-semibold mb-4">🚨 Noodcontacten</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1238,151 +1041,12 @@ const MaintenancePanel = () => {
       </div>
     </div>
   );
-};
-
-  const ConfigPanel = () => (
-    <div className="space-y-6">
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold mb-4">Bedrijfsconfiguratie</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h4 className="font-medium mb-3">Studio Tarieven (4-uur dagdeel)</h4>
-            <div className="space-y-3">
-              {config.studios.map((studio, index) => (
-                <div key={studio.id} className="flex items-center gap-3">
-                  <span className="w-20 text-sm">{studio.name}</span>
-                  <input 
-                    type="number" 
-                    value={studio.hourlyRate}
-                    onChange={(e) => {
-                      const newConfig = { ...config };
-                      newConfig.studios[index].hourlyRate = Number(e.target.value);
-                      newConfig.studios[index].dayRate = Number(e.target.value) * 4; // 4-uur dagdeel
-                      newConfig.studios[index].monthlyRate = Number(e.target.value) * 32; // 8 dagdelen per maand
-                      onConfigChange?.(newConfig);
-                    }}
-                    className="w-20 px-2 py-1 border rounded text-sm"
-                  />
-                  <span className="text-sm text-gray-500">€/uur</span>
-                  <span className="text-sm text-gray-400">(€{studio.dayRate}/dagdeel)</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h4 className="font-medium mb-3">Operationele Kosten</h4>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm">Huur:</span>
-                <div className="flex items-center gap-2">
-                  <input 
-                    type="number" 
-                    value={config.operationalCosts.rent}
-                    onChange={(e) => {
-                      const newConfig = { ...config };
-                      newConfig.operationalCosts.rent = Number(e.target.value);
-                      onConfigChange?.(newConfig);
-                    }}
-                    className="w-20 px-2 py-1 border rounded text-sm"
-                  />
-                  <span className="text-sm">€/mnd</span>
-                </div>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Utilities:</span>
-                <div className="flex items-center gap-2">
-                  <input 
-                    type="number" 
-                    value={config.operationalCosts.utilities}
-                    onChange={(e) => {
-                      const newConfig = { ...config };
-                      newConfig.operationalCosts.utilities = Number(e.target.value);
-                      onConfigChange?.(newConfig);
-                    }}
-                    className="w-20 px-2 py-1 border rounded text-sm"
-                  />
-                  <span className="text-sm">€/mnd</span>
-                </div>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Locker prijs:</span>
-                <div className="flex items-center gap-2">
-                  <input 
-                    type="number" 
-                    value={config.lockers.monthlyRate}
-                    onChange={(e) => {
-                      const newConfig = { ...config };
-                      newConfig.lockers.monthlyRate = Number(e.target.value);
-                      onConfigChange?.(newConfig);
-                    }}
-                    className="w-20 px-2 py-1 border rounded text-sm"
-                  />
-                  <span className="text-sm">€/mnd</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 pt-4 border-t">
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-lg font-bold text-green-600">€{calculator.getTotalMonthlyCosts()}</p>
-              <p className="text-sm text-gray-500">Totale kosten/mnd</p>
-            </div>
-            <div>
-              <p className="text-lg font-bold text-blue-600">€{Math.round(calculator.getMaxMonthlyRevenue())}</p>
-              <p className="text-sm text-gray-500">Max omzet/mnd</p>
-            </div>
-            <div>
-              <p className="text-lg font-bold text-orange-600">{calculator.calculateBreakEvenOccupancy().toFixed(1)}%</p>
-              <p className="text-sm text-gray-500">Break-even bezetting</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold mb-4">Scenario Analyse (4-uur dagdelen)</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {scenarios.map((scenario, index) => (
-            <div key={index} className="p-4 border rounded-lg">
-              <h4 className="font-medium mb-2">{scenario.occupancyRate}% Bezetting</h4>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span>Omzet:</span>
-                  <span className="font-medium">€{Math.round(scenario.totalRevenue)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Winst:</span>
-                  <span className={`font-medium ${scenario.profit > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    €{Math.round(scenario.profit)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Per partner:</span>
-                  <span className="font-medium">€{Math.round(scenario.profitPerPartner)}</span>
-                </div>
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>Dagdelen:</span>
-                  <span>{scenario.dagdelenUsed || Math.round((scenario.occupancyRate / 100) * 270)}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'dashboard':
         return (
           <div className="space-y-6">
-            {/* Key Metrics - AANGEPAST VOOR 4-UUR DAGDELEN */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <MetricCard
                 title="Maand Omzet"
@@ -1394,7 +1058,7 @@ const MaintenancePanel = () => {
               <MetricCard
                 title="Bezetting"
                 value={`${currentData.occupancyRate}%`}
-                subtitle={`${currentData.usedDagdelen}/${currentData.totalDagdelen} dagdelen dit maand`}
+                subtitle="52/208 dagdelen dit maand"
                 icon={TrendingUp}
                 color="blue"
               />
@@ -1408,7 +1072,7 @@ const MaintenancePanel = () => {
               <MetricCard
                 title="Break-even Status"
                 value={`${currentData.breakEvenPercentage}%`}
-                subtitle="25 dagdelen nodig/behaald"
+                subtitle="35 dagdelen nodig/behaald"
                 icon={Target}
                 color="orange"
               />
@@ -1421,7 +1085,6 @@ const MaintenancePanel = () => {
               />
             </div>
 
-            {/* Studio Status - AANGEPAST VOOR 4-UUR DAGDELEN */}
             <div className="bg-white p-6 rounded-lg shadow-sm border">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <Users className="w-5 h-5" />
@@ -1432,54 +1095,39 @@ const MaintenancePanel = () => {
                   studio={config.studios[0]} 
                   isOccupied={true}
                   currentUser="The Foxes"
-                  nextBooking="Volgende: 14:00-18:00"
-                  temperature={21}
+                  nextBooking="Volgende: 14:00"
+                  temperature={studioTemperatures[0]}
                 />
                 <StudioStatus 
                   studio={config.studios[1]} 
                   isOccupied={false}
-                  nextBooking="Volgende: 18:00-22:00"
-                  temperature={19}
+                  nextBooking="Volgende: 16:00"
+                  temperature={studioTemperatures[1]}
                 />
                 <StudioStatus 
                   studio={config.studios[2]} 
                   isOccupied={true}
                   currentUser="DJ Mike"
-                  nextBooking="Volgende: 19:00-23:00"
-                  temperature={22}
+                  nextBooking="Volgende: 15:30"
+                  temperature={studioTemperatures[2]}
                 />
               </div>
             </div>
 
-            {/* Info Alert - AANGEPAST VOOR 4-UUR DAGDELEN */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="text-blue-800 font-semibold">🎉 REPKOT Beheertool - 4-Uur Dagdelen Live!</h3>
+              <h3 className="text-blue-800 font-semibold">🎉 REPKOT Beheertool is Live!</h3>
               <p className="text-blue-700 text-sm mt-1">
-                Alle functionaliteiten zijn aangepast voor realistische 4-uur dagdelen: 
-                Ochtend (10:00-14:00), Middag (14:00-18:00), Avond (18:00-22:00). 
-                Abonnementen bevatten 2 dagdelen per week = 8 uur totaal voor betere repetitie-ervaring.
+                Alle functionaliteiten zijn toegevoegd met volledig werkende formulieren en input velden.
               </p>
             </div>
           </div>
         );
-      case 'subscriptions':
-        return <SubscriptionManager config={config} />;
-      case 'bookings':
-        return <BookingManager config={config} />;
       case 'access':
         return <AccessCodeManager />;
       case 'climate':
         return <ClimateControl />;
-      case 'lockers':
-        return <LockerManager config={config} />;
-      case 'finance':
-        return <FinancialDashboard />;
       case 'maintenance':
         return <MaintenancePanel />;
-      case 'reports':
-        return <ReportsManager config={config} />;
-      case 'config':
-        return <ConfigPanel />;
       default:
         return (
           <div className="bg-white p-6 rounded-lg shadow-sm border">
@@ -1516,15 +1164,9 @@ const MaintenancePanel = () => {
           <div className="flex space-x-8 overflow-x-auto">
             {[
               { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
-              { id: 'subscriptions', label: 'Abonnementen', icon: CreditCard },
-              { id: 'bookings', label: 'Losse Boekingen', icon: Calendar },
               { id: 'access', label: 'Toegang', icon: KeyRound },
               { id: 'climate', label: 'Klimaat', icon: Thermometer },
-              { id: 'lockers', label: 'Lockers', icon: Lock },
-              { id: 'finance', label: 'Financieel', icon: DollarSign },
-              { id: 'reports', label: 'Rapportage', icon: BarChart3 },
-              { id: 'maintenance', label: 'Onderhoud', icon: Wrench },
-              { id: 'config', label: 'Configuratie', icon: Settings }
+              { id: 'maintenance', label: 'Onderhoud', icon: Wrench }
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
