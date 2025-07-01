@@ -22,6 +22,10 @@ import {
   EyeOff
 } from 'lucide-react';
 import { BusinessConfig, BusinessCalculator, defaultConfig } from '../lib/config';
+import SubscriptionManager from './SubscriptionManager';
+import BookingManager from './BookingManager';
+import LockerManager from './LockerManager';
+import ReportsManager from './ReportsManager';
 
 // Type definitions
 interface MaintenanceIssue {
@@ -1042,6 +1046,231 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
     </div>
   );
 
+  const FinancialDashboard = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <MetricCard
+          title="Totale Omzet"
+          value={`€${currentData.monthlyRevenue}`}
+          subtitle={`+${Math.round(((currentData.monthlyRevenue / config.breakEven.targetMonthlyRevenue) - 1) * 100)}% vs target`}
+          icon={DollarSign}
+          color="green"
+        />
+        <MetricCard
+          title="Abonnement Omzet"
+          value={`€${currentData.subscriptionRevenue}`}
+          subtitle={`${Math.round((currentData.subscriptionRevenue / currentData.monthlyRevenue) * 100)}% van totaal`}
+          icon={CreditCard}
+          color="blue"
+        />
+        <MetricCard
+          title="Losse Verhuur"
+          value={`€${currentData.hourlyRevenue}`}
+          subtitle={`${Math.round((currentData.hourlyRevenue / currentData.monthlyRevenue) * 100)}% van totaal`}
+          icon={Clock}
+          color="purple"
+        />
+        <MetricCard
+          title="Locker Omzet"
+          value={`€${currentData.activeLockers * config.lockers.monthlyRate}`}
+          subtitle={`${Math.round(((currentData.activeLockers * config.lockers.monthlyRate) / currentData.monthlyRevenue) * 100)}% van totaal`}
+          icon={Lock}
+          color="orange"
+        />
+      </div>
+
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <h3 className="text-lg font-semibold mb-4">Financiële Details</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="font-semibold mb-3">Omzet Breakdown</h4>
+            <div className="space-y-2">
+              {config.studios.map((studio, index) => {
+                const revenues = [820, 720, 600];
+                return (
+                  <div key={studio.id} className="flex justify-between items-center p-2 border rounded">
+                    <span>{studio.name} ({studio.size}m²)</span>
+                    <span className="font-semibold">€{revenues[index]}</span>
+                  </div>
+                );
+              })}
+              <div className="flex justify-between items-center p-2 border rounded font-semibold bg-blue-50">
+                <span>Totaal Studios</span>
+                <span>€{1540}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold mb-3">Kostenstructuur</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center p-2 border rounded">
+                <span>Operationele kosten</span>
+                <span className="font-semibold">€{calculator.getTotalMonthlyCosts()}</span>
+              </div>
+              <div className="flex justify-between items-center p-2 border rounded">
+                <span>Netto winst</span>
+                <span className={`font-semibold ${
+                  currentData.monthlyRevenue - calculator.getTotalMonthlyCosts() > 0 
+                    ? 'text-green-600' 
+                    : 'text-red-600'
+                }`}>
+                  €{currentData.monthlyRevenue - calculator.getTotalMonthlyCosts()}
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-2 border rounded bg-green-50">
+                <span>Per partner</span>
+                <span className="font-semibold text-green-600">
+                  €{Math.round((currentData.monthlyRevenue - calculator.getTotalMonthlyCosts()) / 2)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <h3 className="text-lg font-semibold mb-4">Scenario Analyse</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {scenarios.map((scenario, index) => (
+            <div key={index} className="p-4 border rounded-lg">
+              <h4 className="font-medium mb-2">{scenario.occupancyRate}% Bezetting</h4>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span>Omzet:</span>
+                  <span className="font-medium">€{Math.round(scenario.totalRevenue)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Winst:</span>
+                  <span className={`font-medium ${scenario.profit > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    €{Math.round(scenario.profit)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Per partner:</span>
+                  <span className="font-medium">€{Math.round(scenario.profitPerPartner)}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const ConfigPanel = () => (
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <h3 className="text-lg font-semibold mb-4">Bedrijfsconfiguratie</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="font-medium mb-3">Studio Tarieven</h4>
+            <div className="space-y-3">
+              {config.studios.map((studio, index) => (
+                <div key={studio.id} className="flex items-center gap-3">
+                  <span className="w-20 text-sm">{studio.name}</span>
+                  <input 
+                    type="number" 
+                    value={studio.hourlyRate}
+                    onChange={(e) => {
+                      if (onConfigChange) {
+                        const newConfig = { ...config };
+                        newConfig.studios[index].hourlyRate = Number(e.target.value);
+                        newConfig.studios[index].dayRate = Number(e.target.value) * 4;
+                        newConfig.studios[index].monthlyRate = Number(e.target.value) * 40;
+                        onConfigChange(newConfig);
+                      }
+                    }}
+                    className="w-20 px-2 py-1 border rounded text-sm"
+                  />
+                  <span className="text-sm text-gray-500">€/uur</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h4 className="font-medium mb-3">Operationele Kosten</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm">Huur:</span>
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="number" 
+                    value={config.operationalCosts.rent}
+                    onChange={(e) => {
+                      if (onConfigChange) {
+                        const newConfig = { ...config };
+                        newConfig.operationalCosts.rent = Number(e.target.value);
+                        onConfigChange(newConfig);
+                      }
+                    }}
+                    className="w-20 px-2 py-1 border rounded text-sm"
+                  />
+                  <span className="text-sm">€/mnd</span>
+                </div>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm">Utilities:</span>
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="number" 
+                    value={config.operationalCosts.utilities}
+                    onChange={(e) => {
+                      if (onConfigChange) {
+                        const newConfig = { ...config };
+                        newConfig.operationalCosts.utilities = Number(e.target.value);
+                        onConfigChange(newConfig);
+                      }
+                    }}
+                    className="w-20 px-2 py-1 border rounded text-sm"
+                  />
+                  <span className="text-sm">€/mnd</span>
+                </div>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm">Locker prijs:</span>
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="number" 
+                    value={config.lockers.monthlyRate}
+                    onChange={(e) => {
+                      if (onConfigChange) {
+                        const newConfig = { ...config };
+                        newConfig.lockers.monthlyRate = Number(e.target.value);
+                        onConfigChange(newConfig);
+                      }
+                    }}
+                    className="w-20 px-2 py-1 border rounded text-sm"
+                  />
+                  <span className="text-sm">€/mnd</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 pt-4 border-t">
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <p className="text-lg font-bold text-green-600">€{calculator.getTotalMonthlyCosts()}</p>
+              <p className="text-sm text-gray-500">Totale kosten/mnd</p>
+            </div>
+            <div>
+              <p className="text-lg font-bold text-blue-600">€{Math.round(calculator.getMaxMonthlyRevenue())}</p>
+              <p className="text-sm text-gray-500">Max omzet/mnd</p>
+            </div>
+            <div>
+              <p className="text-lg font-bold text-orange-600">{calculator.calculateBreakEvenOccupancy().toFixed(1)}%</p>
+              <p className="text-sm text-gray-500">Break-even bezetting</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'dashboard':
@@ -1117,17 +1346,29 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h3 className="text-blue-800 font-semibold">🎉 REPKOT Beheertool is Live!</h3>
               <p className="text-blue-700 text-sm mt-1">
-                Alle functionaliteiten zijn toegevoegd met volledig werkende formulieren en input velden.
+                Alle functionaliteiten zijn toegevoegd: Abonnementenbeheer, Boekingssysteem, Lockerbeheer, Financiële rapportage, Klimaatbeheersing en Toegangscodes.
               </p>
             </div>
           </div>
         );
+      case 'subscriptions':
+        return <SubscriptionManager config={config} />;
+      case 'bookings':
+        return <BookingManager config={config} />;
       case 'access':
         return <AccessCodeManager />;
       case 'climate':
         return <ClimateControl />;
+      case 'lockers':
+        return <LockerManager config={config} />;
+      case 'finance':
+        return <FinancialDashboard />;
       case 'maintenance':
         return <MaintenancePanel />;
+      case 'reports':
+        return <ReportsManager config={config} />;
+      case 'config':
+        return <ConfigPanel />;
       default:
         return (
           <div className="bg-white p-6 rounded-lg shadow-sm border">
@@ -1164,9 +1405,15 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
           <div className="flex space-x-8 overflow-x-auto">
             {[
               { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
+              { id: 'subscriptions', label: 'Abonnementen', icon: CreditCard },
+              { id: 'bookings', label: 'Losse Boekingen', icon: Calendar },
               { id: 'access', label: 'Toegang', icon: KeyRound },
               { id: 'climate', label: 'Klimaat', icon: Thermometer },
-              { id: 'maintenance', label: 'Onderhoud', icon: Wrench }
+              { id: 'lockers', label: 'Lockers', icon: Lock },
+              { id: 'finance', label: 'Financieel', icon: DollarSign },
+              { id: 'reports', label: 'Rapportage', icon: BarChart3 },
+              { id: 'maintenance', label: 'Onderhoud', icon: Wrench },
+              { id: 'config', label: 'Configuratie', icon: Settings }
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
