@@ -25,6 +25,49 @@ interface DashboardProps {
   config?: BusinessConfig;
   onConfigChange?: (config: BusinessConfig) => void;
 }
+// Type definities
+interface MaintenanceIssue {
+  id: string;
+  title: string;
+  description: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  location: string;
+  category?: string;
+  status: 'open' | 'in-progress' | 'resolved';
+  reportedDate: string;
+  resolvedDate?: string;
+  reportedBy: string;
+}
+
+interface FormData {
+  title: string;
+  description: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  location: string;
+  category: string;
+}
+
+interface FormErrors {
+  title?: string;
+  description?: string;
+  location?: string;
+  category?: string;
+}
+interface FormData {
+  title: string;
+  description: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  location: string;
+  category: string;
+}
+
+interface FormErrors {
+  title?: string;
+  description?: string;
+  location?: string;
+  category?: string;
+}
+
 
 export default function Dashboard({ config = defaultConfig, onConfigChange }: DashboardProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -584,36 +627,6 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
 // Verbeterde MaintenancePanel component in Dashboard.tsx
 import React, { useState } from 'react';
 import { Wrench, CheckCircle, AlertCircle, Clock, Plus, X } from 'lucide-react';
-
-// Type definities
-interface MaintenanceIssue {
-  id: string;
-  title: string;
-  description: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  location: string;
-  category?: string;
-  status: 'open' | 'in-progress' | 'resolved';
-  reportedDate: string;
-  resolvedDate?: string;
-  reportedBy: string;
-}
-
-interface FormData {
-  title: string;
-  description: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  location: string;
-  category: string;
-}
-
-interface FormErrors {
-  title?: string;
-  description?: string;
-  location?: string;
-  category?: string;
-}
-
 const MaintenancePanel = () => {
   // State voor maintenance issues
   const [maintenanceIssues, setMaintenanceIssues] = useState<MaintenanceIssue[]>([
