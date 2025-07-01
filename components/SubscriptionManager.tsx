@@ -1,12 +1,42 @@
-// components/SubscriptionManager.tsx
+// components/SubscriptionManager.tsx - Met volledige bewerk functionaliteit
 import React, { useState } from 'react';
-import { Users, Plus, Calendar, DollarSign, AlertCircle, CheckCircle, X } from 'lucide-react';
+import { 
+  Users, 
+  Plus, 
+  Calendar, 
+  DollarSign, 
+  AlertCircle, 
+  CheckCircle, 
+  X, 
+  Edit3,
+  Pause,
+  Play,
+  Trash2,
+  MessageSquare,
+  History,
+  Save,
+  Phone,
+  Mail,
+  Clock,
+  PauseCircle
+} from 'lucide-react';
 import { BusinessConfig } from '../lib/config';
+
+interface SubscriptionHistory {
+  id: string;
+  action: 'created' | 'paused' | 'resumed' | 'cancelled' | 'updated' | 'note_added';
+  date: string;
+  by: string;
+  details: string;
+  oldValue?: any;
+  newValue?: any;
+}
 
 interface Subscription {
   id: string;
   customerName: string;
   customerEmail: string;
+  customerPhone?: string;
   studioId: string;
   studioName: string;
   schedule: {
@@ -18,6 +48,14 @@ interface Subscription {
   monthlyPrice: number;
   status: 'active' | 'paused' | 'cancelled' | 'overdue';
   type: 'monthly' | 'yearly' | 'student';
+  notes?: string;
+  pauseReason?: string;
+  pausedDate?: string;
+  cancelledDate?: string;
+  cancelReason?: string;
+  history: SubscriptionHistory[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface SubscriptionManagerProps {
@@ -30,6 +68,7 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
       id: 'sub-001',
       customerName: 'The Foxes',
       customerEmail: 'contact@thefoxes.be',
+      customerPhone: '+32 456 78 90 12',
       studioId: 'studio-a',
       studioName: 'Studio A',
       schedule: [
@@ -40,12 +79,25 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
       nextBilling: '2025-07-15',
       monthlyPrice: 160,
       status: 'active',
-      type: 'monthly'
+      type: 'monthly',
+      notes: 'Betrouwbare klant, altijd op tijd met betalingen.',
+      history: [
+        {
+          id: 'hist-001',
+          action: 'created',
+          date: '2025-03-15',
+          by: 'Partner Dashboard',
+          details: 'Abonnement aangemaakt voor Studio A'
+        }
+      ],
+      createdAt: '2025-03-15',
+      updatedAt: '2025-03-15'
     },
     {
       id: 'sub-002',
       customerName: 'Rock United',
       customerEmail: 'info@rockunited.be',
+      customerPhone: '+32 478 12 34 56',
       studioId: 'studio-b',
       studioName: 'Studio B',
       schedule: [
@@ -56,7 +108,18 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
       nextBilling: '2025-08-01',
       monthlyPrice: 160,
       status: 'active',
-      type: 'monthly'
+      type: 'monthly',
+      history: [
+        {
+          id: 'hist-002',
+          action: 'created',
+          date: '2025-04-01',
+          by: 'Partner Dashboard',
+          details: 'Abonnement aangemaakt voor Studio B'
+        }
+      ],
+      createdAt: '2025-04-01',
+      updatedAt: '2025-04-01'
     },
     {
       id: 'sub-003',
@@ -72,7 +135,26 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
       nextBilling: '2025-07-10',
       monthlyPrice: 128,
       status: 'overdue',
-      type: 'monthly'
+      type: 'monthly',
+      notes: 'Betaling vaak te laat. Extra follow-up nodig.',
+      history: [
+        {
+          id: 'hist-003',
+          action: 'created',
+          date: '2025-05-10',
+          by: 'Partner Dashboard',
+          details: 'Abonnement aangemaakt voor Studio C'
+        },
+        {
+          id: 'hist-004',
+          action: 'note_added',
+          date: '2025-06-25',
+          by: 'Partner 2',
+          details: 'Betaalherinnering verstuurd'
+        }
+      ],
+      createdAt: '2025-05-10',
+      updatedAt: '2025-06-25'
     },
     {
       id: 'sub-004',
@@ -87,22 +169,60 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
       startDate: '2025-06-01',
       nextBilling: '2025-08-01',
       monthlyPrice: 144,
-      status: 'active',
-      type: 'student'
+      status: 'paused',
+      type: 'student',
+      pauseReason: 'Examens - hervatten in september',
+      pausedDate: '2025-06-20',
+      notes: 'Goede studenten, vriendelijk contact.',
+      history: [
+        {
+          id: 'hist-005',
+          action: 'created',
+          date: '2025-06-01',
+          by: 'Partner Dashboard',
+          details: 'Student abonnement aangemaakt'
+        },
+        {
+          id: 'hist-006',
+          action: 'paused',
+          date: '2025-06-20',
+          by: 'Partner 1',
+          details: 'Gepauzeerd voor examens',
+          oldValue: 'active',
+          newValue: 'paused'
+        }
+      ],
+      createdAt: '2025-06-01',
+      updatedAt: '2025-06-20'
     }
   ]);
 
   const [showNewForm, setShowNewForm] = useState(false);
+  const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState<{
+    action: 'pause' | 'cancel' | 'resume';
+    subscription: Subscription;
+    reason?: string;
+  } | null>(null);
+  const [showHistoryModal, setShowHistoryModal] = useState<Subscription | null>(null);
+  const [showNotesModal, setShowNotesModal] = useState<Subscription | null>(null);
+  const [newNote, setNewNote] = useState('');
+
   const [formData, setFormData] = useState({
     customerName: '',
     customerEmail: '',
+    customerPhone: '',
     studioId: '',
     type: 'monthly' as 'monthly' | 'student' | 'yearly',
     startDate: '',
-    scheduleSlots: [{ day: '', timeSlot: '' }]
+    scheduleSlots: [{ day: '', timeSlot: '' }],
+    notes: ''
   });
+
+  const [editFormData, setEditFormData] = useState<Partial<Subscription>>({});
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  // Form validation en helper functies
   const validateField = (name: string, value: any): string => {
     switch (name) {
       case 'customerName':
@@ -122,83 +242,122 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
     return '';
   };
 
-  const handleInputChange = (name: string, value: any) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
-    // Clear error when user starts typing
-    if (formErrors[name]) {
-      setFormErrors(prev => ({ ...prev, [name]: '' }));
-    }
+  const addHistoryEntry = (subscription: Subscription, action: SubscriptionHistory['action'], details: string, oldValue?: any, newValue?: any): SubscriptionHistory => {
+    return {
+      id: `hist-${Date.now()}`,
+      action,
+      date: new Date().toISOString().split('T')[0],
+      by: 'Partner Dashboard',
+      details,
+      oldValue,
+      newValue
+    };
   };
 
-  const handleInputBlur = (name: string, value: any) => {
-    const error = validateField(name, value);
-    if (error) {
-      setFormErrors(prev => ({ ...prev, [name]: error }));
-    }
-  };
-
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-    
-    Object.keys(formData).forEach(key => {
-      if (key !== 'scheduleSlots') {
-        const error = validateField(key, formData[key as keyof typeof formData]);
-        if (error) {
-          newErrors[key] = error;
-        }
+  // Subscription management functies
+  const pauseSubscription = (subscriptionId: string, reason: string) => {
+    setSubscriptions(prev => prev.map(sub => {
+      if (sub.id === subscriptionId) {
+        const historyEntry = addHistoryEntry(sub, 'paused', `Gepauzeerd: ${reason}`, 'active', 'paused');
+        return {
+          ...sub,
+          status: 'paused' as const,
+          pauseReason: reason,
+          pausedDate: new Date().toISOString().split('T')[0],
+          history: [...sub.history, historyEntry],
+          updatedAt: new Date().toISOString().split('T')[0]
+        };
       }
-    });
-
-    setFormErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+      return sub;
+    }));
+    setShowConfirmDialog(null);
   };
 
-  const resetForm = () => {
-    setFormData({
-      customerName: '',
-      customerEmail: '',
-      studioId: '',
-      type: 'monthly',
-      startDate: '',
-      scheduleSlots: [{ day: '', timeSlot: '' }]
-    });
-    setFormErrors({});
+  const resumeSubscription = (subscriptionId: string) => {
+    setSubscriptions(prev => prev.map(sub => {
+      if (sub.id === subscriptionId) {
+        const historyEntry = addHistoryEntry(sub, 'resumed', 'Abonnement hervat', 'paused', 'active');
+        const nextBilling = new Date();
+        nextBilling.setMonth(nextBilling.getMonth() + 1);
+        
+        return {
+          ...sub,
+          status: 'active' as const,
+          pauseReason: undefined,
+          pausedDate: undefined,
+          nextBilling: nextBilling.toISOString().split('T')[0],
+          history: [...sub.history, historyEntry],
+          updatedAt: new Date().toISOString().split('T')[0]
+        };
+      }
+      return sub;
+    }));
   };
 
-  const studioOptions = config.studios.map(studio => ({
-    value: studio.id,
-    label: `${studio.name} (${studio.size}m² - €${studio.monthlyRate}/maand)`
-  }));
+  const cancelSubscription = (subscriptionId: string, reason: string) => {
+    setSubscriptions(prev => prev.map(sub => {
+      if (sub.id === subscriptionId) {
+        const historyEntry = addHistoryEntry(sub, 'cancelled', `Geannuleerd: ${reason}`, sub.status, 'cancelled');
+        return {
+          ...sub,
+          status: 'cancelled' as const,
+          cancelReason: reason,
+          cancelledDate: new Date().toISOString().split('T')[0],
+          history: [...sub.history, historyEntry],
+          updatedAt: new Date().toISOString().split('T')[0]
+        };
+      }
+      return sub;
+    }));
+    setShowConfirmDialog(null);
+  };
 
-  const subscriptionTypeOptions = [
-    { value: 'monthly', label: 'Standaard Maandabonnement (2x4u/week)' },
-    { value: 'student', label: `Student Maandabonnement (-${config.discounts.student}%)` },
-    { value: 'yearly', label: `Jaarabonnement (-${config.discounts.bulk}%)` }
-  ];
+  const addNote = (subscriptionId: string, note: string) => {
+    setSubscriptions(prev => prev.map(sub => {
+      if (sub.id === subscriptionId) {
+        const historyEntry = addHistoryEntry(sub, 'note_added', `Notitie toegevoegd: ${note.substring(0, 50)}...`);
+        const existingNotes = sub.notes || '';
+        const timestamp = new Date().toLocaleString('nl-BE');
+        const newNotes = existingNotes 
+          ? `${existingNotes}\n\n[${timestamp}] ${note}`
+          : `[${timestamp}] ${note}`;
+        
+        return {
+          ...sub,
+          notes: newNotes,
+          history: [...sub.history, historyEntry],
+          updatedAt: new Date().toISOString().split('T')[0]
+        };
+      }
+      return sub;
+    }));
+    setNewNote('');
+    setShowNotesModal(null);
+  };
 
-  const dayOptions = [
-    { value: 'Maandag', label: 'Maandag' },
-    { value: 'Dinsdag', label: 'Dinsdag' },
-    { value: 'Woensdag', label: 'Woensdag' },
-    { value: 'Donderdag', label: 'Donderdag' },
-    { value: 'Vrijdag', label: 'Vrijdag' },
-    { value: 'Zaterdag', label: 'Zaterdag' },
-    { value: 'Zondag', label: 'Zondag' }
-  ];
+  const updateSubscription = (subscriptionId: string, updates: Partial<Subscription>) => {
+    setSubscriptions(prev => prev.map(sub => {
+      if (sub.id === subscriptionId) {
+        const historyEntry = addHistoryEntry(sub, 'updated', 'Abonnement gegevens bijgewerkt');
+        return {
+          ...sub,
+          ...updates,
+          history: [...sub.history, historyEntry],
+          updatedAt: new Date().toISOString().split('T')[0]
+        };
+      }
+      return sub;
+    }));
+    setEditingSubscription(null);
+    setEditFormData({});
+  };
 
-  const timeSlotOptions = [
-    { value: 'Ochtend (10:00-14:00)', label: 'Ochtend (10:00-14:00)' },
-    { value: 'Middag (14:00-18:00)', label: 'Middag (14:00-18:00)' },
-    { value: 'Avond (18:00-22:00)', label: 'Avond (18:00-22:00)' },
-    { value: 'Late Avond (19:00-23:00)', label: 'Late Avond (19:00-23:00)' }
-  ];
-
+  // UI helper functies
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
-      case 'overdue': return 'bg-red-100 text-red-800';
       case 'paused': return 'bg-yellow-100 text-yellow-800';
+      case 'overdue': return 'bg-red-100 text-red-800';
       case 'cancelled': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -207,8 +366,20 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'active': return <CheckCircle className="w-4 h-4" />;
+      case 'paused': return <PauseCircle className="w-4 h-4" />;
       case 'overdue': return <AlertCircle className="w-4 h-4" />;
+      case 'cancelled': return <X className="w-4 h-4" />;
       default: return null;
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active': return 'Actief';
+      case 'paused': return 'Gepauzeerd';
+      case 'overdue': return 'Achterstallig';
+      case 'cancelled': return 'Geannuleerd';
+      default: return status;
     }
   };
 
@@ -225,81 +396,6 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
       return acc;
     }, {} as Record<string, number>);
     return byStudio;
-  };
-
-  const addScheduleSlot = () => {
-    setFormData(prev => ({
-      ...prev,
-      scheduleSlots: [...prev.scheduleSlots, { day: '', timeSlot: '' }]
-    }));
-  };
-
-  const removeScheduleSlot = (index: number) => {
-    if (formData.scheduleSlots.length > 1) {
-      setFormData(prev => ({
-        ...prev,
-        scheduleSlots: prev.scheduleSlots.filter((_, i) => i !== index)
-      }));
-    }
-  };
-
-  const updateScheduleSlot = (index: number, field: 'day' | 'timeSlot', value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      scheduleSlots: prev.scheduleSlots.map((slot, i) => 
-        i === index ? { ...slot, [field]: value } : slot
-      )
-    }));
-  };
-
-  const calculatePrice = () => {
-    const studio = config.studios.find(s => s.id === formData.studioId);
-    if (!studio) return 0;
-
-    let price = studio.monthlyRate;
-    if (formData.type === 'student') {
-      price = price * (1 - config.discounts.student / 100);
-    } else if (formData.type === 'yearly') {
-      price = price * (1 - config.discounts.bulk / 100);
-    }
-    return Math.round(price);
-  };
-
-  const createSubscription = async () => {
-    if (!validateForm()) {
-      return;
-    }
-
-    const studio = config.studios.find(s => s.id === formData.studioId);
-    if (!studio) return;
-
-    const price = calculatePrice();
-    const nextBilling = new Date();
-    nextBilling.setMonth(nextBilling.getMonth() + 1);
-
-    const newSub: Subscription = {
-      id: `sub-${Date.now()}`,
-      customerName: formData.customerName,
-      customerEmail: formData.customerEmail,
-      studioId: formData.studioId,
-      studioName: studio.name,
-      schedule: formData.scheduleSlots.filter(s => s.day && s.timeSlot),
-      startDate: formData.startDate,
-      nextBilling: nextBilling.toISOString().split('T')[0],
-      monthlyPrice: price,
-      status: 'active',
-      type: formData.type
-    };
-
-    setSubscriptions(prev => [...prev, newSub]);
-    setShowNewForm(false);
-    resetForm();
-  };
-
-  const updateSubscriptionStatus = (subscriptionId: string, status: Subscription['status']) => {
-    setSubscriptions(prev => prev.map(sub => 
-      sub.id === subscriptionId ? { ...sub, status } : sub
-    ));
   };
 
   const MetricCard = ({ title, value, subtitle, icon: Icon, color = 'blue' }: {
@@ -320,6 +416,308 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
       </div>
     </div>
   );
+
+  // Modals
+  const ConfirmDialog = () => {
+    if (!showConfirmDialog) return null;
+
+    const { action, subscription } = showConfirmDialog;
+    const [reason, setReason] = useState(showConfirmDialog.reason || '');
+
+    const actionLabels = {
+      pause: 'Pauzeren',
+      cancel: 'Annuleren',
+      resume: 'Hervatten'
+    };
+
+    const actionColors = {
+      pause: 'bg-yellow-600',
+      cancel: 'bg-red-600',
+      resume: 'bg-green-600'
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+          <h3 className="text-lg font-semibold mb-4">
+            Abonnement {actionLabels[action]}
+          </h3>
+          <p className="text-gray-600 mb-4">
+            Weet je zeker dat je het abonnement van <strong>{subscription.customerName}</strong> wilt {actionLabels[action].toLowerCase()}?
+          </p>
+          
+          {(action === 'pause' || action === 'cancel') && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Reden {action === 'pause' ? '(optioneel)' : '(verplicht)'}
+              </label>
+              <textarea
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={3}
+                placeholder={action === 'pause' 
+                  ? "Bijv: Vakantie, examens, financiële problemen..."
+                  : "Bijv: Niet tevreden, verhuizing, financiële redenen..."
+                }
+              />
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                if (action === 'pause') pauseSubscription(subscription.id, reason);
+                else if (action === 'cancel' && reason.trim()) cancelSubscription(subscription.id, reason);
+                else if (action === 'resume') resumeSubscription(subscription.id);
+              }}
+              disabled={action === 'cancel' && !reason.trim()}
+              className={`flex-1 px-4 py-2 ${actionColors[action]} text-white rounded-md hover:opacity-90 disabled:opacity-50`}
+            >
+              {actionLabels[action]}
+            </button>
+            <button
+              onClick={() => setShowConfirmDialog(null)}
+              className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+            >
+              Annuleren
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const NotesModal = () => {
+    if (!showNotesModal) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">
+              Notities - {showNotesModal.customerName}
+            </h3>
+            <button onClick={() => setShowNotesModal(null)}>
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Bestaande notities */}
+          {showNotesModal.notes && (
+            <div className="mb-4">
+              <h4 className="font-medium mb-2">Bestaande notities:</h4>
+              <div className="bg-gray-50 p-3 rounded-md text-sm whitespace-pre-wrap">
+                {showNotesModal.notes}
+              </div>
+            </div>
+          )}
+
+          {/* Nieuwe notitie toevoegen */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Nieuwe notitie toevoegen:
+            </label>
+            <textarea
+              value={newNote}
+              onChange={(e) => setNewNote(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows={4}
+              placeholder="Voeg hier je notitie toe..."
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => addNote(showNotesModal.id, newNote)}
+              disabled={!newNote.trim()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            >
+              <Save className="w-4 h-4 inline mr-2" />
+              Notitie Opslaan
+            </button>
+            <button
+              onClick={() => setShowNotesModal(null)}
+              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+            >
+              Sluiten
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const HistoryModal = () => {
+    if (!showHistoryModal) return null;
+
+    const actionLabels: Record<string, string> = {
+      'created': 'Aangemaakt',
+      'paused': 'Gepauzeerd',
+      'resumed': 'Hervat',
+      'cancelled': 'Geannuleerd',
+      'updated': 'Bijgewerkt',
+      'note_added': 'Notitie toegevoegd'
+    };
+
+    const actionColors: Record<string, string> = {
+      'created': 'text-green-600',
+      'paused': 'text-yellow-600',
+      'resumed': 'text-green-600',
+      'cancelled': 'text-red-600',
+      'updated': 'text-blue-600',
+      'note_added': 'text-purple-600'
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">
+              Geschiedenis - {showHistoryModal.customerName}
+            </h3>
+            <button onClick={() => setShowHistoryModal(null)}>
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {showHistoryModal.history.map((entry) => (
+              <div key={entry.id} className="border-l-4 border-blue-500 bg-blue-50 p-3 rounded-r">
+                <div className="flex justify-between items-start mb-1">
+                  <span className={`font-medium ${actionColors[entry.action] || 'text-gray-600'}`}>
+                    {actionLabels[entry.action] || entry.action}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {new Date(entry.date).toLocaleDateString('nl-BE')}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-700">{entry.details}</p>
+                <p className="text-xs text-gray-500 mt-1">Door: {entry.by}</p>
+                {entry.oldValue && entry.newValue && (
+                  <p className="text-xs text-gray-500">
+                    {entry.oldValue} → {entry.newValue}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setShowHistoryModal(null)}
+            className="mt-4 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+          >
+            Sluiten
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const EditModal = () => {
+    if (!editingSubscription) return null;
+
+    const saveChanges = () => {
+      updateSubscription(editingSubscription.id, editFormData);
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">
+              Bewerk Abonnement - {editingSubscription.customerName}
+            </h3>
+            <button onClick={() => setEditingSubscription(null)}>
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Klant Naam
+              </label>
+              <input
+                type="text"
+                value={editFormData.customerName ?? editingSubscription.customerName}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, customerName: e.target.value }))}
+                className="form-input"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                value={editFormData.customerEmail ?? editingSubscription.customerEmail}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, customerEmail: e.target.value }))}
+                className="form-input"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Telefoon
+              </label>
+              <input
+                type="tel"
+                value={editFormData.customerPhone ?? editingSubscription.customerPhone ?? ''}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, customerPhone: e.target.value }))}
+                className="form-input"
+                placeholder="+32 xxx xx xx xx"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Maandprijs
+              </label>
+              <input
+                type="number"
+                value={editFormData.monthlyPrice ?? editingSubscription.monthlyPrice}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, monthlyPrice: Number(e.target.value) }))}
+                className="form-input"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Abonnement Type
+              </label>
+              <select
+                value={editFormData.type ?? editingSubscription.type}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, type: e.target.value as any }))}
+                className="form-input"
+              >
+                <option value="monthly">Standaard Maandabonnement</option>
+                <option value="student">Student Abonnement</option>
+                <option value="yearly">Jaarabonnement</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-6 flex gap-3">
+            <button
+              onClick={saveChanges}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              <Save className="w-4 h-4 inline mr-2" />
+              Wijzigingen Opslaan
+            </button>
+            <button
+              onClick={() => setEditingSubscription(null)}
+              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+            >
+              Annuleren
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -344,11 +742,11 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
         />
 
         <MetricCard
-          title="Gemiddelde Prijs"
-          value={`€${Math.round(calculateMonthlyRecurringRevenue() / subscriptions.filter(s => s.status === 'active').length)}`}
-          subtitle="2 dagdelen/week (8u)"
-          icon={Calendar}
-          color="purple"
+          title="Gepauzeerd"
+          value={subscriptions.filter(s => s.status === 'paused').length.toString()}
+          subtitle="Tijdelijk gestopt"
+          icon={Pause}
+          color="yellow"
         />
 
         <MetricCard
@@ -372,223 +770,10 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
         </button>
       </div>
 
-      {/* New Subscription Form */}
-      {showNewForm && (
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-semibold">Nieuw Abonnement</h3>
-            <button
-              onClick={() => {
-                setShowNewForm(false);
-                resetForm();
-              }}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Band/Artist Naam *
-              </label>
-              <input
-                type="text"
-                value={formData.customerName}
-                onChange={(e) => handleInputChange('customerName', e.target.value)}
-                onBlur={(e) => handleInputBlur('customerName', e.target.value)}
-                className={`form-input ${formErrors.customerName ? 'border-red-300' : ''}`}
-                placeholder="Naam van de band"
-              />
-              {formErrors.customerName && (
-                <p className="text-red-600 text-xs mt-1">{formErrors.customerName}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Contact Email *
-              </label>
-              <input
-                type="email"
-                value={formData.customerEmail}
-                onChange={(e) => handleInputChange('customerEmail', e.target.value)}
-                onBlur={(e) => handleInputBlur('customerEmail', e.target.value)}
-                className={`form-input ${formErrors.customerEmail ? 'border-red-300' : ''}`}
-                placeholder="contact@band.com"
-              />
-              {formErrors.customerEmail && (
-                <p className="text-red-600 text-xs mt-1">{formErrors.customerEmail}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Studio *
-              </label>
-              <select
-                value={formData.studioId}
-                onChange={(e) => handleInputChange('studioId', e.target.value)}
-                onBlur={(e) => handleInputBlur('studioId', e.target.value)}
-                className={`form-input ${formErrors.studioId ? 'border-red-300' : ''}`}
-              >
-                <option value="">Selecteer studio</option>
-                {studioOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              {formErrors.studioId && (
-                <p className="text-red-600 text-xs mt-1">{formErrors.studioId}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Abonnement Type
-              </label>
-              <select
-                value={formData.type}
-                onChange={(e) => handleInputChange('type', e.target.value)}
-                className="form-input"
-              >
-                {subscriptionTypeOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Start Datum *
-              </label>
-              <input
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => handleInputChange('startDate', e.target.value)}
-                onBlur={(e) => handleInputBlur('startDate', e.target.value)}
-                className={`form-input ${formErrors.startDate ? 'border-red-300' : ''}`}
-                min={new Date().toISOString().split('T')[0]}
-              />
-              {formErrors.startDate && (
-                <p className="text-red-600 text-xs mt-1">{formErrors.startDate}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Schedule Slots */}
-          <div className="mt-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Wekelijkse Planning (2 dagdelen van 4u) *
-            </label>
-            <div className="space-y-3">
-              {formData.scheduleSlots.map((slot, index) => (
-                <div key={index} className="flex gap-3 items-end">
-                  <div className="flex-1">
-                    <label className="block text-xs text-gray-500 mb-1">Dag {index + 1}</label>
-                    <select
-                      value={slot.day}
-                      onChange={(e) => updateScheduleSlot(index, 'day', e.target.value)}
-                      className="form-input"
-                    >
-                      <option value="">Selecteer dag</option>
-                      {dayOptions.map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex-1">
-                    <label className="block text-xs text-gray-500 mb-1">Tijdslot {index + 1}</label>
-                    <select
-                      value={slot.timeSlot}
-                      onChange={(e) => updateScheduleSlot(index, 'timeSlot', e.target.value)}
-                      className="form-input"
-                    >
-                      <option value="">Selecteer tijdslot</option>
-                      {timeSlotOptions.map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {formData.scheduleSlots.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeScheduleSlot(index)}
-                      className="btn btn-secondary mb-1"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
-              
-              <button
-                type="button"
-                onClick={addScheduleSlot}
-                className="btn btn-secondary text-sm"
-                disabled={formData.scheduleSlots.length >= 3}
-              >
-                + Voeg tijdslot toe
-              </button>
-            </div>
-          </div>
-
-          {/* Price Preview */}
-          {formData.studioId && (
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <div className="flex justify-between items-center">
-                <span className="font-medium">Maandprijs:</span>
-                <span className="text-xl font-bold text-blue-600">€{calculatePrice()}</span>
-              </div>
-              <p className="text-sm text-blue-600 mt-1">
-                2 dagdelen van 4u per week = 8u totaal per week
-              </p>
-              {formData.type === 'student' && (
-                <p className="text-sm text-blue-600 mt-1">
-                  Inclusief {config.discounts.student}% studentenkorting
-                </p>
-              )}
-              {formData.type === 'yearly' && (
-                <p className="text-sm text-blue-600 mt-1">
-                  Inclusief {config.discounts.bulk}% jaarkorting
-                </p>
-              )}
-            </div>
-          )}
-
-          <div className="mt-6 flex gap-3">
-            <button 
-              onClick={createSubscription} 
-              className="btn btn-primary"
-              disabled={!formData.customerName || !formData.customerEmail || !formData.studioId || !formData.startDate}
-            >
-              Abonnement Aanmaken
-            </button>
-            <button 
-              onClick={() => {
-                setShowNewForm(false);
-                resetForm();
-              }} 
-              className="btn btn-secondary"
-            >
-              Annuleren
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Active Subscriptions List */}
+      {/* Subscriptions List */}
       <div className="bg-white rounded-lg shadow-sm border">
         <div className="p-6 border-b">
-          <h3 className="text-lg font-semibold">Actieve Abonnementen</h3>
+          <h3 className="text-lg font-semibold">Alle Abonnementen</h3>
         </div>
         <div className="p-6 space-y-4">
           {subscriptions.map(subscription => (
@@ -600,7 +785,7 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
                     <span className={`status-badge ${getStatusColor(subscription.status)}`}>
                       <span className="flex items-center gap-1">
                         {getStatusIcon(subscription.status)}
-                        {subscription.status}
+                        {getStatusLabel(subscription.status)}
                       </span>
                     </span>
                     {subscription.type === 'student' && (
@@ -614,32 +799,136 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
                       </span>
                     )}
                   </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600 mb-2">
+                    <div className="flex items-center gap-1">
+                      <Mail className="w-4 h-4" />
+                      <a href={`mailto:${subscription.customerEmail}`} className="hover:text-blue-600">
+                        {subscription.customerEmail}
+                      </a>
+                    </div>
+                    {subscription.customerPhone && (
+                      <div className="flex items-center gap-1">
+                        <Phone className="w-4 h-4" />
+                        <a href={`tel:${subscription.customerPhone}`} className="hover:text-blue-600">
+                          {subscription.customerPhone}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+
                   <p className="text-sm text-gray-600 mb-1">
-                    {subscription.customerEmail} • {subscription.studioName} • Start: {new Date(subscription.startDate).toLocaleDateString('nl-BE')}
+                    {subscription.studioName} • Start: {new Date(subscription.startDate).toLocaleDateString('nl-BE')}
                   </p>
+                  
                   <p className="text-xs text-gray-500">
                     Planning: {subscription.schedule.map(s => `${s.day} ${s.timeSlot}`).join(', ')}
                   </p>
+                  
                   <p className="text-xs text-blue-600 mt-1">
                     📅 {subscription.schedule.length} × 4u = {subscription.schedule.length * 4}u per week
                   </p>
+
+                  {/* Status specifieke info */}
+                  {subscription.status === 'paused' && subscription.pauseReason && (
+                    <p className="text-xs text-yellow-600 mt-1">
+                      ⏸ Gepauzeerd: {subscription.pauseReason}
+                    </p>
+                  )}
+                  {subscription.status === 'cancelled' && subscription.cancelReason && (
+                    <p className="text-xs text-red-600 mt-1">
+                      ❌ Geannuleerd: {subscription.cancelReason}
+                    </p>
+                  )}
+                  {subscription.status === 'overdue' && (
+                    <p className="text-xs text-red-600 mt-1">
+                      ⚠ Betaling achterstallig sinds {new Date(subscription.nextBilling).toLocaleDateString('nl-BE')}
+                    </p>
+                  )}
+
+                  {subscription.notes && (
+                    <p className="text-xs text-gray-600 mt-2 p-2 bg-gray-50 rounded">
+                      📝 {subscription.notes.length > 100 
+                        ? subscription.notes.substring(0, 100) + '...' 
+                        : subscription.notes}
+                    </p>
+                  )}
                 </div>
-                <div className="text-right">
+
+                <div className="text-right ml-4">
                   <p className="text-lg font-bold text-green-600">€{subscription.monthlyPrice}/maand</p>
-                  <p className="text-sm text-gray-500">
-                    Volgende factuur: {new Date(subscription.nextBilling).toLocaleDateString('nl-BE')}
-                  </p>
-                  <div className="mt-2 flex gap-2">
-                    <button className="btn btn-secondary text-xs">Bewerken</button>
-                    {subscription.status === 'overdue' ? (
-                      <button 
-                        onClick={() => updateSubscriptionStatus(subscription.id, 'active')}
-                        className="btn text-xs bg-red-600 text-white"
+                  {subscription.status === 'active' && (
+                    <p className="text-sm text-gray-500">
+                      Volgende: {new Date(subscription.nextBilling).toLocaleDateString('nl-BE')}
+                    </p>
+                  )}
+                  
+                  {/* Action buttons */}
+                  <div className="mt-3 flex flex-wrap gap-1">
+                    <button
+                      onClick={() => {
+                        setEditingSubscription(subscription);
+                        setEditFormData({});
+                      }}
+                      className="btn btn-secondary text-xs"
+                      title="Bewerken"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                    </button>
+
+                    <button
+                      onClick={() => setShowNotesModal(subscription)}
+                      className="btn btn-secondary text-xs"
+                      title="Notities"
+                    >
+                      <MessageSquare className="w-3 h-3" />
+                    </button>
+
+                    <button
+                      onClick={() => setShowHistoryModal(subscription)}
+                      className="btn btn-secondary text-xs"
+                      title="Geschiedenis"
+                    >
+                      <History className="w-3 h-3" />
+                    </button>
+
+                    {subscription.status === 'active' && (
+                      <>
+                        <button
+                          onClick={() => setShowConfirmDialog({ action: 'pause', subscription })}
+                          className="btn text-xs bg-yellow-600 text-white hover:bg-yellow-700"
+                          title="Pauzeren"
+                        >
+                          <Pause className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => setShowConfirmDialog({ action: 'cancel', subscription })}
+                          className="btn text-xs bg-red-600 text-white hover:bg-red-700"
+                          title="Annuleren"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </>
+                    )}
+
+                    {subscription.status === 'paused' && (
+                      <button
+                        onClick={() => setShowConfirmDialog({ action: 'resume', subscription })}
+                        className="btn text-xs bg-green-600 text-white hover:bg-green-700"
+                        title="Hervatten"
+                      >
+                        <Play className="w-3 h-3" />
+                      </button>
+                    )}
+
+                    {subscription.status === 'overdue' && (
+                      <button
+                        onClick={() => console.log('Send payment reminder')}
+                        className="btn btn-primary text-xs"
+                        title="Herinnering versturen"
                       >
                         Herinnering
                       </button>
-                    ) : (
-                      <button className="btn btn-primary text-xs">Factureren</button>
                     )}
                   </div>
                 </div>
@@ -648,6 +937,12 @@ export default function SubscriptionManager({ config }: SubscriptionManagerProps
           ))}
         </div>
       </div>
+
+      {/* Modals */}
+      <ConfirmDialog />
+      <NotesModal />
+      <HistoryModal />
+      <EditModal />
     </div>
   );
 }
