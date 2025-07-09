@@ -341,7 +341,6 @@ const [maintenanceIssues, setMaintenanceIssues] = useState([
     setStudioStatuses(newStatuses);
   };
 
-  // Helper functions
   const getPriorityColor = (priority: string): string => {
     const option = priorityOptions.find(opt => opt.value === priority);
     return option ? option.color : 'gray';
@@ -365,6 +364,23 @@ const [maintenanceIssues, setMaintenanceIssues] = useState([
     const option = categoryOptions.find(opt => opt.value === category);
     return option ? option.label : category;
   };
+
+  // Helper functions voor maintenance
+const addMaintenanceIssue = (newIssue) => {
+  setMaintenanceIssues(prev => [newIssue, ...prev]);
+};
+
+const updateIssueStatus = (issueId, newStatus) => {
+  setMaintenanceIssues(prev => prev.map(item => 
+    item.id === issueId 
+      ? { 
+          ...item, 
+          status: newStatus,
+          resolvedDate: newStatus === 'resolved' ? new Date().toISOString().split('T')[0] : undefined
+        }
+      : item
+  ));
+};
 
   // Components
   const MetricCard = ({ 
