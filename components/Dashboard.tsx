@@ -205,7 +205,7 @@ const handleMaintenanceInputChange = (field: string, value: string) => {
       errors.title = 'Titel moet minimaal 5 karakters bevatten';
     }
 
-    if (!maintenanceForm.location) {
+    if (!showMaintenanceForm.location) {
       errors.location = 'Locatie selectie is verplicht';
     }
 
