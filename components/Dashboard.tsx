@@ -801,117 +801,126 @@ const MaintenancePanel = () => {
       </div>
 
       {/* Maintenance Problem Form */}
-      {showMaintenanceForm && (
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <h3 className="text-lg font-semibold mb-4">Nieuw Onderhoudsprobleem Melden</h3>
-          
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Titel/Probleem
-                </label>
-                <input
-                  type="text"
-                  value={newMaintenance.title}
-                  onChange={(e) => setNewMaintenance(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Korte beschrijving van het probleem"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Locatie
-                </label>
-                <select
-                  value={newMaintenance.location}
-                  onChange={(e) => setNewMaintenance(prev => ({ ...prev, location: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Selecteer locatie</option>
-                  <option value="studio-a">Studio A</option>
-                  <option value="studio-b">Studio B</option>
-                  <option value="studio-c">Studio C</option>
-                  <option value="common">Gemeenschappelijke ruimte</option>
-                  <option value="lockers">Lockers</option>
-                  <option value="entrance">Ingang/Toegang</option>
-                  <option value="technical">Technische ruimte</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Prioriteit
-                </label>
-                <select
-                  value={newMaintenance.priority}
-                  onChange={(e) => setNewMaintenance(prev => ({ ...prev, priority: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="low">Laag - Kan wachten</option>
-                  <option value="medium">Gemiddeld - Binnen week</option>
-                  <option value="high">Hoog - Binnen 24u</option>
-                  <option value="urgent">Urgent - Direct</option>
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Gedetailleerde Beschrijving
-                </label>
-                <textarea
-                  value={newMaintenance.description}
-                  onChange={(e) => setNewMaintenance(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={3}
-                  placeholder="Beschrijf het probleem in detail: wat is er aan de hand, wanneer treedt het op, welke impact heeft het..."
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <button 
-                type="button"
-                onClick={() => {
-                  if (!newMaintenance.title.trim() || !newMaintenance.location) {
-                    alert('Vul minimaal een titel en locatie in.');
-                    return;
-                  }
-
-                  const newIssue = {
-                    id: `maint-${Date.now()}`,
-                    title: newMaintenance.title.trim(),
-                    description: newMaintenance.description.trim() || 'Geen aanvullende beschrijving',
-                    priority: newMaintenance.priority,
-                    location: newMaintenance.location,
-                    status: 'open',
-                    reportedDate: new Date().toISOString().split('T')[0],
-                    reportedBy: 'Partner Dashboard'
-                  };
-                  
-                  addMaintenanceIssue(newIssue);
-                  setNewMaintenance({ title: '', description: '', priority: 'medium', location: '' });
-                  setShowMaintenanceForm(false);
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                Probleem Melden
-              </button>
-              <button 
-                type="button"
-                onClick={() => {
-                  setNewMaintenance({ title: '', description: '', priority: 'medium', location: '' });
-                  setShowMaintenanceForm(false);
-                }}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
-              >
-                Annuleren
-              </button>
-            </div>
-          </div>
+{showMaintenanceForm && (
+  <div className="bg-white p-6 rounded-lg shadow-sm border">
+    <h3 className="text-lg font-semibold mb-4">Nieuw Onderhoudsprobleem Melden</h3>
+    
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        {/* HIER KOMEN DE FORM INPUTS */}
+        
+        {/* Titel input */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Titel/Probleem
+          </label>
+          <input
+            type="text"
+            value={newMaintenance.title}
+            onChange={(e) => setNewMaintenance(prev => ({ ...prev, title: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Korte beschrijving van het probleem"
+          />
         </div>
-      )}
+
+        {/* Locatie dropdown */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Locatie
+          </label>
+          <select
+            value={newMaintenance.location}
+            onChange={(e) => setNewMaintenance(prev => ({ ...prev, location: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Selecteer locatie</option>
+            <option value="studio-a">Studio A</option>
+            <option value="studio-b">Studio B</option>
+            <option value="studio-c">Studio C</option>
+            <option value="common">Gemeenschappelijke ruimte</option>
+            <option value="lockers">Lockers</option>
+            <option value="entrance">Ingang/Toegang</option>
+            <option value="technical">Technische ruimte</option>
+          </select>
+        </div>
+
+        {/* Prioriteit dropdown */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Prioriteit
+          </label>
+          <select
+            value={newMaintenance.priority}
+            onChange={(e) => setNewMaintenance(prev => ({ ...prev, priority: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="low">Laag - Kan wachten</option>
+            <option value="medium">Gemiddeld - Binnen week</option>
+            <option value="high">Hoog - Binnen 24u</option>
+            <option value="urgent">Urgent - Direct</option>
+          </select>
+        </div>
+
+        {/* Beschrijving textarea */}
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Gedetailleerde Beschrijving
+          </label>
+          <textarea
+            value={newMaintenance.description}
+            onChange={(e) => setNewMaintenance(prev => ({ ...prev, description: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            rows={3}
+            placeholder="Beschrijf het probleem in detail..."
+          />
+        </div>
+        
+      </div>
+      
+      {/* Submit en Cancel buttons */}
+      <div className="flex gap-3 pt-4">
+        <button 
+          type="button"
+          onClick={() => {
+            if (!newMaintenance.title.trim() || !newMaintenance.location) {
+              alert('Vul minimaal een titel en locatie in.');
+              return;
+            }
+            
+            const newIssue = {
+              id: `maint-${Date.now()}`,
+              title: newMaintenance.title.trim(),
+              description: newMaintenance.description.trim() || 'Geen aanvullende beschrijving',
+              priority: newMaintenance.priority,
+              location: newMaintenance.location,
+              status: 'open',
+              reportedDate: new Date().toISOString().split('T')[0],
+              reportedBy: 'Partner Dashboard'
+            };
+            
+            addMaintenanceIssue(newIssue);
+            setNewMaintenance({ title: '', description: '', priority: 'medium', location: '' });
+            setShowMaintenanceForm(false);
+          }}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          Probleem Melden
+        </button>
+        <button 
+          type="button"
+          onClick={() => {
+            setNewMaintenance({ title: '', description: '', priority: 'medium', location: '' });
+            setShowMaintenanceForm(false);
+          }}
+          className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+        >
+          Annuleren
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Emergency Contacts */}
       <div className="bg-white p-6 rounded-lg shadow-sm border">
