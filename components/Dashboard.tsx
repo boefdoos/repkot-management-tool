@@ -670,57 +670,14 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
     </div>
   );
 
-  const MaintenancePanel = () => (
+const MaintenancePanel = () => {
+  return (
     <div className="space-y-6">
-      {/* Header met statistieken */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <MetricCard
-          title="Open Problemen"
-          value={maintenanceIssues.filter(issue => issue.status === 'open').length.toString()}
-          subtitle="Actie vereist"
-          icon={Wrench}
-          color="red"
-        />
-        <MetricCard
-          title="Opgelost Deze Maand"
-          value={maintenanceIssues.filter(issue => issue.status === 'resolved').length.toString()}
-          subtitle="Afgehandeld"
-          icon={CheckCircle}
-          color="green"
-        />
-        <MetricCard
-          title="Urgente Issues"
-          value={maintenanceIssues.filter(issue => 
-            ['urgent', 'high'].includes(issue.priority) && issue.status === 'open'
-          ).length.toString()}
-          subtitle="Hoge prioriteit"
-          icon={AlertCircle}
-          color="orange"
-        />
-        <MetricCard
-          title="Gem. Oplostijd"
-          value="2.3"
-          subtitle="Dagen"
-          icon={Clock}
-          color="blue"
-        />
-      </div>
-
-      {/* Quick Actions */}
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Wrench className="w-5 h-5" />
-            Onderhoud & Monitoring
-          </h3>
-          <button
-            onClick={() => setShowMaintenanceForm(true)}
-            className="btn btn-primary"
-          >
-            <Plus className="w-4 h-4" />
-            Nieuw Probleem Melden
-          </button>
-        </div>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Wrench className="w-5 h-5" />
+          Onderhoud & Monitoring
+        </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -762,320 +719,192 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
                   <span className={`px-2 py-1 rounded-full text-xs ${
                     issue.status === 'open' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
                   }`}>
-                    {getStatusIcon(issue.status)} {issue.status === 'open' ? 'Open' : 'Opgelost'}
+                    {issue.status === 'open' ? 'Open' : 'Opgelost'}
                   </span>
                 </div>
               ))}
             </div>
+            <button 
+              onClick={() => setShowMaintenanceForm(true)}
+              className="btn btn-primary mt-3 w-full"
+            >
+              Nieuw Probleem Melden
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Nieuwe Melding Formulier */}
-      {showMaintenanceForm && (
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-semibold">🔧 Nieuw Onderhoudsprobleem Melden</h3>
-            <button
-              type="button"
-              onClick={() => {
-                setShowMaintenanceForm(false);
-                resetMaintenanceForm();
-              }}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-          
-          <form onSubmit={(e) => { e.preventDefault(); handleMaintenanceSubmit(); }} className="space-y-6">
-            {/* Titel en Locatie */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="maintenance-title" className="block text-sm font-medium text-gray-700 mb-1">
-                  Probleem Titel <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="maintenance-title"
-                  name="title"
-                  type="text"
-                  value={maintenanceForm.title}
-                  onChange={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleMaintenanceInputChange('title', e.target.value);
-                  }}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    maintenanceErrors.title ? 'border-red-300 focus:ring-red-500' : ''
-                  }`}
-                  placeholder="Korte, duidelijke beschrijving van het probleem"
-                  maxLength={100}
-                />
-                {maintenanceErrors.title && (
-                  <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {maintenanceErrors.title}
-                  </p>
-                )}
-                <p className="text-xs text-gray-500 mt-1">
-                  {maintenanceForm.title.length}/100 karakters
-                </p>
-              </div>
-
-              <div>
-                <label htmlFor="maintenance-location" className="block text-sm font-medium text-gray-700 mb-1">
-                  Locatie <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="maintenance-location"
-                  name="location"
-                  value={maintenanceForm.location}
-                  onChange={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleMaintenanceInputChange('location', e.target.value);
-                  }}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    maintenanceErrors.location ? 'border-red-300 focus:ring-red-500' : ''
-                  }`}
-                >
-                  <option value="">Selecteer locatie waar probleem zich voordoet</option>
-                  {locationOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                {maintenanceErrors.location && (
-                  <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {maintenanceErrors.location}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Prioriteit en Categorie */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="maintenance-priority" className="block text-sm font-medium text-gray-700 mb-1">
-                  Prioriteitslevel
-                </label>
-                <select
-                  id="maintenance-priority"
-                  name="priority"
-                  value={maintenanceForm.priority}
-                  onChange={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const value = e.target.value as 'low' | 'medium' | 'high' | 'urgent';
-                    handleMaintenanceInputChange('priority', value);
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {priorityOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  {priorityOptions.find(opt => opt.value === maintenanceForm.priority)?.label}
-                </p>
-              </div>
-
-              <div>
-                <label htmlFor="maintenance-category" className="block text-sm font-medium text-gray-700 mb-1">
-                  Probleem Categorie
-                </label>
-                <select
-                  id="maintenance-category"
-                  name="category"
-                  value={maintenanceForm.category}
-                  onChange={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleMaintenanceInputChange('category', e.target.value);
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {categoryOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Beschrijving */}
-            <div>
-              <label htmlFor="maintenance-description" className="block text-sm font-medium text-gray-700 mb-1">
-                Gedetailleerde Beschrijving <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                id="maintenance-description"
-                name="description"
-                value={maintenanceForm.description}
-                onChange={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleMaintenanceInputChange('description', e.target.value);
-                }}
-                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  maintenanceErrors.description ? 'border-red-300 focus:ring-red-500' : ''
-                }`}
-                rows={4}
-                placeholder="Beschrijf het probleem in detail:
-- Wat is er precies aan de hand?
-- Wanneer treedt het probleem op?
-- Welke impact heeft het op de werking?
-- Zijn er tijdelijke oplossingen mogelijk?"
-                maxLength={500}
-              />
-              {maintenanceErrors.description && (
-                <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" />
-                  {maintenanceErrors.description}
-                </p>
-              )}
-              <p className="text-xs text-gray-500 mt-1">
-                {maintenanceForm.description.length}/500 karakters
-              </p>
-            </div>
-
-            {/* Preview */}
-            {maintenanceForm.title && maintenanceForm.location && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-semibold text-blue-800 mb-2">Preview van melding:</h4>
-                <div className="space-y-1 text-sm">
-                  <p><strong>Titel:</strong> {maintenanceForm.title}</p>
-                  <p><strong>Locatie:</strong> {getLocationLabel(maintenanceForm.location)}</p>
-                  <p><strong>Prioriteit:</strong> 
-                    <span className={`ml-1 px-2 py-1 rounded-full text-xs bg-${getPriorityColor(maintenanceForm.priority)}-100 text-${getPriorityColor(maintenanceForm.priority)}-800`}>
-                      {priorityOptions.find(opt => opt.value === maintenanceForm.priority)?.label}
+      {/* All Maintenance Issues */}
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <h3 className="text-lg font-semibold mb-4">Alle Onderhoudsproblemen</h3>
+        <div className="space-y-3">
+          {maintenanceIssues.map(issue => (
+            <div key={issue.id} className="border rounded-lg p-4">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h4 className="font-semibold">{issue.title}</h4>
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      issue.status === 'open' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                    }`}>
+                      {issue.status === 'open' ? 'Open' : 'Opgelost'}
                     </span>
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      issue.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                      issue.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                      issue.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-blue-100 text-blue-800'
+                    }`}>
+                      {issue.priority === 'urgent' ? 'Urgent' :
+                       issue.priority === 'high' ? 'Hoog' :
+                       issue.priority === 'medium' ? 'Gemiddeld' : 'Laag'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-1">{issue.description}</p>
+                  <p className="text-xs text-gray-500">
+                    Locatie: {issue.location} • Gemeld door: {issue.reportedBy} • {new Date(issue.reportedDate).toLocaleDateString('nl-BE')}
+                    {issue.resolvedDate && ` • Opgelost: ${new Date(issue.resolvedDate).toLocaleDateString('nl-BE')}`}
                   </p>
-                  <p><strong>Categorie:</strong> {getCategoryLabel(maintenanceForm.category)}</p>
-                  {maintenanceForm.description && <p><strong>Beschrijving:</strong> {maintenanceForm.description}</p>}
+                </div>
+                <div className="ml-4">
+                  {issue.status === 'open' ? (
+                    <button
+                      onClick={() => updateIssueStatus(issue.id, 'resolved')}
+                      className="btn btn-success text-xs"
+                    >
+                      Als Opgelost Markeren
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => updateIssueStatus(issue.id, 'open')}
+                      className="btn btn-secondary text-xs"
+                    >
+                      Heropenen
+                    </button>
+                  )}
                 </div>
               </div>
-            )}
+            </div>
+          ))}
+        </div>
+      </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-4 border-t">
+      {/* Maintenance Problem Form */}
+      {showMaintenanceForm && (
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <h3 className="text-lg font-semibold mb-4">Nieuw Onderhoudsprobleem Melden</h3>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Titel/Probleem
+                </label>
+                <input
+                  type="text"
+                  value={newMaintenance.title}
+                  onChange={(e) => setNewMaintenance(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Korte beschrijving van het probleem"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Locatie
+                </label>
+                <select
+                  value={newMaintenance.location}
+                  onChange={(e) => setNewMaintenance(prev => ({ ...prev, location: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Selecteer locatie</option>
+                  <option value="studio-a">Studio A</option>
+                  <option value="studio-b">Studio B</option>
+                  <option value="studio-c">Studio C</option>
+                  <option value="common">Gemeenschappelijke ruimte</option>
+                  <option value="lockers">Lockers</option>
+                  <option value="entrance">Ingang/Toegang</option>
+                  <option value="technical">Technische ruimte</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Prioriteit
+                </label>
+                <select
+                  value={newMaintenance.priority}
+                  onChange={(e) => setNewMaintenance(prev => ({ ...prev, priority: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="low">Laag - Kan wachten</option>
+                  <option value="medium">Gemiddeld - Binnen week</option>
+                  <option value="high">Hoog - Binnen 24u</option>
+                  <option value="urgent">Urgent - Direct</option>
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Gedetailleerde Beschrijving
+                </label>
+                <textarea
+                  value={newMaintenance.description}
+                  onChange={(e) => setNewMaintenance(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                  placeholder="Beschrijf het probleem in detail: wat is er aan de hand, wanneer treedt het op, welke impact heeft het..."
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
               <button 
-                type="submit"
-                disabled={isSubmittingMaintenance}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                type="button"
+                onClick={() => {
+                  if (!newMaintenance.title.trim() || !newMaintenance.location) {
+                    alert('Vul minimaal een titel en locatie in.');
+                    return;
+                  }
+
+                  const newIssue = {
+                    id: `maint-${Date.now()}`,
+                    title: newMaintenance.title.trim(),
+                    description: newMaintenance.description.trim() || 'Geen aanvullende beschrijving',
+                    priority: newMaintenance.priority,
+                    location: newMaintenance.location,
+                    status: 'open',
+                    reportedDate: new Date().toISOString().split('T')[0],
+                    reportedBy: 'Partner Dashboard'
+                  };
+                  
+                  addMaintenanceIssue(newIssue);
+                  setNewMaintenance({ title: '', description: '', priority: 'medium', location: '' });
+                  setShowMaintenanceForm(false);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {isSubmittingMaintenance ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Melden...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-4 h-4" />
-                    Probleem Melden
-                  </>
-                )}
+                Probleem Melden
               </button>
               <button 
                 type="button"
                 onClick={() => {
+                  setNewMaintenance({ title: '', description: '', priority: 'medium', location: '' });
                   setShowMaintenanceForm(false);
-                  resetMaintenanceForm();
                 }}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 flex items-center gap-2"
-                disabled={isSubmittingMaintenance}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
               >
-                <X className="w-4 h-4" />
                 Annuleren
               </button>
             </div>
-          </form>
-
-          {/* Debug info voor troubleshooting */}
-          <div className="mt-4 p-3 bg-gray-50 rounded text-xs text-gray-600">
-            <strong>Status:</strong> Titel: "{maintenanceForm.title}" | Locatie: "{maintenanceForm.location}" | 
-            Prioriteit: "{maintenanceForm.priority}" | Categorie: "{maintenanceForm.category}"
           </div>
         </div>
       )}
 
-      {/* Alle Onderhoudsproblemen */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold mb-4">Alle Onderhoudsproblemen</h3>
-        
-        {maintenanceIssues.length === 0 ? (
-          <div className="text-center py-8">
-            <Wrench className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">Geen onderhoudsproblemen gemeld</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {maintenanceIssues.map(issue => (
-              <div key={issue.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h4 className="font-semibold">{issue.title}</h4>
-                      <span className={`px-2 py-1 rounded-full text-xs bg-${getPriorityColor(issue.priority)}-100 text-${getPriorityColor(issue.priority)}-800`}>
-                        {priorityOptions.find(opt => opt.value === issue.priority)?.label.split(' - ')[0]}
-                      </span>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        issue.status === 'open' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                      }`}>
-                        {getStatusIcon(issue.status)} {issue.status === 'open' ? 'Open' : 'Opgelost'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">{issue.description}</p>
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                      <span>📍 {getLocationLabel(issue.location)}</span>
-                      <span>👤 {issue.reportedBy}</span>
-                      <span>📅 {new Date(issue.reportedDate).toLocaleDateString('nl-BE')}</span>
-                      {issue.resolvedDate && (
-                        <span>✅ Opgelost: {new Date(issue.resolvedDate).toLocaleDateString('nl-BE')}</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="ml-4 flex gap-2">
-                    {issue.status === 'open' ? (
-                      <button
-                        type="button"
-                        onClick={() => updateIssueStatus(issue.id, 'resolved')}
-                        className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
-                      >
-                        ✅ Als Opgelost Markeren
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => updateIssueStatus(issue.id, 'open')}
-                        className="px-3 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-700"
-                      >
-                        🔄 Heropenen
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => deleteIssue(issue.id)}
-                      className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
-                    >
-                      🗑️ Verwijderen
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* Emergency Contacts */}
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold mb-4">🚨 Noodcontacten</h3>
+        <h3 className="text-lg font-semibold mb-4">Noodcontacten</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-4 border rounded-lg">
             <h4 className="font-semibold">Partner 1 (Technisch)</h4>
@@ -1116,6 +945,7 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
       </div>
     </div>
   );
+};
 
   const FinancialDashboard = () => (
     <div className="space-y-6">
