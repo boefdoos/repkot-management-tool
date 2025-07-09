@@ -181,13 +181,10 @@ const [maintenanceIssues, setMaintenanceIssues] = useState([
     { value: 'other', label: 'Overig' }
   ];
 
-  // Form handlers
+// Form handlers
 const handleMaintenanceInputChange = (field: string, value: string) => {
   setNewMaintenance(prev => ({ ...prev, [field]: value }));
-    if (maintenanceErrors[field]) {
-      setMaintenanceErrors(prev => ({ ...prev, [field]: undefined }));
-    }
-  };
+};
 
   const handleCodeInputChange = (field: keyof NewCodeForm, value: string) => {
     setNewCodeForm(prev => ({ ...prev, [field]: value }));
