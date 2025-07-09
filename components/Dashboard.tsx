@@ -138,6 +138,48 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
         </div>
         <Icon className={`w-8 h-8 text-${color}-500`} />
       </div>
+
+      {/* Emergency Contacts */}
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <h3 className="text-lg font-semibold mb-4">Noodcontacten</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 border rounded-lg">
+            <h4 className="font-semibold">Partner 1 (Technisch)</h4>
+            <p className="text-sm text-gray-600 mb-2">Primair contact voor technische problemen</p>
+            <div className="space-y-1">
+              <a href="tel:+32123456789" className="flex items-center gap-2 text-blue-600 text-sm">
+                📞 +32 123 45 67 89
+              </a>
+              <a href="mailto:partner1@repkot.be" className="flex items-center gap-2 text-blue-600 text-sm">
+                📧 partner1@repkot.be
+              </a>
+            </div>
+          </div>
+          
+          <div className="p-4 border rounded-lg">
+            <h4 className="font-semibold">Partner 2 (Zakelijk)</h4>
+            <p className="text-sm text-gray-600 mb-2">Primair contact voor klanten/administratie</p>
+            <div className="space-y-1">
+              <a href="tel:+32987654321" className="flex items-center gap-2 text-blue-600 text-sm">
+                📞 +32 98 76 54 321
+              </a>
+              <a href="mailto:partner2@repkot.be" className="flex items-center gap-2 text-blue-600 text-sm">
+                📧 partner2@repkot.be
+              </a>
+            </div>
+          </div>
+          
+          <div className="p-4 border rounded-lg">
+            <h4 className="font-semibold">Externe Diensten</h4>
+            <p className="text-sm text-gray-600 mb-2">Voor urgente technische problemen</p>
+            <div className="space-y-1 text-sm">
+              <div><strong>Elektricien:</strong> +32 111 22 33 44</div>
+              <div><strong>Verwarming:</strong> +32 555 66 77 88</div>
+              <div><strong>Beveiliging:</strong> +32 999 88 77 66</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 
@@ -449,11 +491,156 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
               ))}
             </div>
             <button 
-              onClick={() => setShowMaintenanceForm(true)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowMaintenanceForm(!showMaintenanceForm);
+              }}
               className="btn btn-primary mt-3 w-full"
             >
-              Nieuw Probleem Melden
+              {showMaintenanceForm ? 'Formulier Sluiten' : 'Nieuw Probleem Melden'}
             </button>
+            
+            {/* FIXED: Formulier direct onder de knop */}
+            {showMaintenanceForm && (
+              <div className="mt-4 p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
+                <h4 className="font-semibold mb-3 text-blue-800">Nieuw Onderhoudsprobleem Melden</h4>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Titel/Probleem *
+                    </label>
+                    <input
+                      type="text"
+                      value={newMaintenance.title}
+                      onChange={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setNewMaintenance(prev => ({ ...prev, title: e.target.value }));
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      onFocus={(e) => e.stopPropagation()}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Korte beschrijving van het probleem"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Locatie *
+                    </label>
+                    <select
+                      value={newMaintenance.location}
+                      onChange={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setNewMaintenance(prev => ({ ...prev, location: e.target.value }));
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      onFocus={(e) => e.stopPropagation()}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Selecteer locatie</option>
+                      <option value="studio-a">Studio A</option>
+                      <option value="studio-b">Studio B</option>
+                      <option value="studio-c">Studio C</option>
+                      <option value="common">Gemeenschappelijke ruimte</option>
+                      <option value="lockers">Lockers</option>
+                      <option value="entrance">Ingang/Toegang</option>
+                      <option value="technical">Technische ruimte</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Prioriteit
+                    </label>
+                    <select
+                      value={newMaintenance.priority}
+                      onChange={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setNewMaintenance(prev => ({ ...prev, priority: e.target.value }));
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      onFocus={(e) => e.stopPropagation()}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="low">Laag - Kan wachten</option>
+                      <option value="medium">Gemiddeld - Binnen week</option>
+                      <option value="high">Hoog - Binnen 24u</option>
+                      <option value="urgent">Urgent - Direct</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Beschrijving
+                    </label>
+                    <textarea
+                      value={newMaintenance.description}
+                      onChange={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setNewMaintenance(prev => ({ ...prev, description: e.target.value }));
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      onFocus={(e) => e.stopPropagation()}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      rows={3}
+                      placeholder="Beschrijf het probleem in detail..."
+                    />
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button 
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        if (!newMaintenance.title.trim() || !newMaintenance.location) {
+                          alert('Vul minimaal een titel en locatie in.');
+                          return;
+                        }
+
+                        const newIssue = {
+                          id: `maint-${Date.now()}`,
+                          title: newMaintenance.title.trim(),
+                          description: newMaintenance.description.trim() || 'Geen aanvullende beschrijving',
+                          priority: newMaintenance.priority,
+                          location: newMaintenance.location,
+                          status: 'open',
+                          reportedDate: new Date().toISOString().split('T')[0],
+                          reportedBy: 'Partner Dashboard'
+                        };
+                        
+                        addMaintenanceIssue(newIssue);
+                        setNewMaintenance({ title: '', description: '', priority: 'medium', location: '' });
+                        setShowMaintenanceForm(false);
+                        alert('✅ Onderhoudsprobleem succesvol gemeld!');
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    >
+                      Probleem Melden
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setNewMaintenance({ title: '', description: '', priority: 'medium', location: '' });
+                        setShowMaintenanceForm(false);
+                      }}
+                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm"
+                    >
+                      Annuleren
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -513,119 +700,7 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
         </div>
       </div>
 
-      {/* FIXED: Maintenance Problem Form */}
-      {showMaintenanceForm && (
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <h3 className="text-lg font-semibold mb-4">Nieuw Onderhoudsprobleem Melden</h3>
-          
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Titel/Probleem
-                </label>
-                <input
-                  type="text"
-                  value={newMaintenance.title}
-                  onChange={(e) => setNewMaintenance(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Korte beschrijving van het probleem"
-                />
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Locatie
-                </label>
-                <select
-                  value={newMaintenance.location}
-                  onChange={(e) => setNewMaintenance(prev => ({ ...prev, location: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Selecteer locatie</option>
-                  <option value="studio-a">Studio A</option>
-                  <option value="studio-b">Studio B</option>
-                  <option value="studio-c">Studio C</option>
-                  <option value="common">Gemeenschappelijke ruimte</option>
-                  <option value="lockers">Lockers</option>
-                  <option value="entrance">Ingang/Toegang</option>
-                  <option value="technical">Technische ruimte</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Prioriteit
-                </label>
-                <select
-                  value={newMaintenance.priority}
-                  onChange={(e) => setNewMaintenance(prev => ({ ...prev, priority: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="low">Laag - Kan wachten</option>
-                  <option value="medium">Gemiddeld - Binnen week</option>
-                  <option value="high">Hoog - Binnen 24u</option>
-                  <option value="urgent">Urgent - Direct</option>
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Gedetailleerde Beschrijving
-                </label>
-                <textarea
-                  value={newMaintenance.description}
-                  onChange={(e) => setNewMaintenance(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={3}
-                  placeholder="Beschrijf het probleem in detail..."
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <button 
-                type="button"
-                onClick={() => {
-                  if (!newMaintenance.title.trim() || !newMaintenance.location) {
-                    alert('Vul minimaal een titel en locatie in.');
-                    return;
-                  }
-
-                  const newIssue = {
-                    id: `maint-${Date.now()}`,
-                    title: newMaintenance.title.trim(),
-                    description: newMaintenance.description.trim() || 'Geen aanvullende beschrijving',
-                    priority: newMaintenance.priority,
-                    location: newMaintenance.location,
-                    status: 'open',
-                    reportedDate: new Date().toISOString().split('T')[0],
-                    reportedBy: 'Partner Dashboard'
-                  };
-                  
-                  addMaintenanceIssue(newIssue);
-                  setNewMaintenance({ title: '', description: '', priority: 'medium', location: '' });
-                  setShowMaintenanceForm(false);
-                  alert('✅ Onderhoudsprobleem succesvol gemeld!');
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                Probleem Melden
-              </button>
-              <button 
-                type="button"
-                onClick={() => {
-                  setNewMaintenance({ title: '', description: '', priority: 'medium', location: '' });
-                  setShowMaintenanceForm(false);
-                }}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
-              >
-                Annuleren
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 
