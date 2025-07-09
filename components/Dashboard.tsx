@@ -83,6 +83,7 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
   const [studioStatuses, setStudioStatuses] = useState<string[]>(['Actief', 'Standby', 'Actief']);
 
 // Maintenance state
+const [maintenanceErrors, setMaintenanceErrors] = useState({});
 const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
 const [newMaintenance, setNewMaintenance] = useState({
   title: '',
