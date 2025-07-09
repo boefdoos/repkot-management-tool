@@ -181,8 +181,8 @@ const [maintenanceIssues, setMaintenanceIssues] = useState([
   ];
 
   // Form handlers
-  const handleMaintenanceInputChange = (field: keyof MaintenanceForm, value: string) => {
-    setMaintenanceForm(prev => ({ ...prev, [field]: value }));
+const handleMaintenanceInputChange = (field: string, value: string) => {
+  setNewMaintenance(prev => ({ ...prev, [field]: value }));
     if (maintenanceErrors[field]) {
       setMaintenanceErrors(prev => ({ ...prev, [field]: undefined }));
     }
