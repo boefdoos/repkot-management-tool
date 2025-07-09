@@ -82,43 +82,37 @@ export default function Dashboard({ config = defaultConfig, onConfigChange }: Da
   const [studioTemperatures, setStudioTemperatures] = useState<number[]>([21, 19, 22]);
   const [studioStatuses, setStudioStatuses] = useState<string[]>(['Actief', 'Standby', 'Actief']);
 
-  // Maintenance state
-  const [showMaintenanceForm, setShowMaintenanceForm] = useState<boolean>(false);
-  const [maintenanceForm, setMaintenanceForm] = useState<MaintenanceForm>({
-    title: '',
-    description: '',
+// Maintenance state
+const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
+const [newMaintenance, setNewMaintenance] = useState({
+  title: '',
+  description: '',
+  priority: 'medium',
+  location: ''
+});
+const [maintenanceIssues, setMaintenanceIssues] = useState([
+  {
+    id: 'maint-001',
+    title: 'Studio B - Thermostaat error',
+    description: 'Thermostaat reageert niet op temperatuurwijzigingen',
+    priority: 'high',
+    location: 'studio-b',
+    status: 'open',
+    reportedDate: '2025-06-25',
+    reportedBy: 'Partner 1'
+  },
+  {
+    id: 'maint-002', 
+    title: 'Locker 4 - Slot klemming',
+    description: 'Slot van locker 4 klemt bij openen',
     priority: 'medium',
-    location: '',
-    category: 'technical'
-  });
-  const [maintenanceErrors, setMaintenanceErrors] = useState<FormErrors>({});
-  const [isSubmittingMaintenance, setIsSubmittingMaintenance] = useState<boolean>(false);
-
-  const [maintenanceIssues, setMaintenanceIssues] = useState<MaintenanceIssue[]>([
-    {
-      id: 'maint-001',
-      title: 'Studio B - Thermostaat error',
-      description: 'Thermostaat reageert niet op temperatuurwijzigingen',
-      priority: 'high',
-      location: 'studio-b',
-      category: 'climate',
-      status: 'open',
-      reportedDate: '2025-06-25',
-      reportedBy: 'Partner 1'
-    },
-    {
-      id: 'maint-002', 
-      title: 'Locker 4 - Slot klemming',
-      description: 'Slot van locker 4 klemt bij openen',
-      priority: 'medium',
-      location: 'lockers',
-      category: 'equipment',
-      status: 'resolved',
-      reportedDate: '2025-06-22',
-      resolvedDate: '2025-06-22',
-      reportedBy: 'Partner 2'
-    }
-  ]);
+    location: 'lockers',
+    status: 'resolved',
+    reportedDate: '2025-06-22',
+    resolvedDate: '2025-06-22',
+    reportedBy: 'Partner 2'
+  }
+]);
 
   // Access codes state
   const [activeCodes, setActiveCodes] = useState<AccessCode[]>([
